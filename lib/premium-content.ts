@@ -34,6 +34,7 @@ export type ViewerSequenceConfig = {
   totalFrames: number
   framesDir: string
   defaultFrame: number
+  frameScale: number
   dragSensitivity: number
   autoplayTurns: number
   preloadBatchSize: number
@@ -170,6 +171,7 @@ export const premiumContent: ProjectContent = {
     totalFrames: 75,
     framesDir: "/frames",
     defaultFrame: 0,
+    frameScale: 0.8,
     dragSensitivity: 0.45,
     autoplayTurns: 0.18,
     preloadBatchSize: 12,

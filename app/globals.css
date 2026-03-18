@@ -123,6 +123,7 @@
   }
   html {
     @apply font-sans;
+    overflow: hidden;
     background:
       radial-gradient(circle at top, oklch(0.34 0.05 74 / 0.24), transparent 28%),
       linear-gradient(180deg, oklch(0.12 0.01 38), oklch(0.18 0.015 45));
@@ -130,6 +131,7 @@
   body {
     @apply bg-background text-foreground;
     min-height: 100vh;
+    overflow: hidden;
     background:
       radial-gradient(circle at 18% 18%, oklch(0.42 0.06 78 / 0.14), transparent 0 24%),
       radial-gradient(circle at 82% 14%, oklch(0.32 0.04 56 / 0.18), transparent 0 20%),
@@ -144,44 +146,60 @@
 }
 
 .property-page-shell {
-  min-height: 100vh;
-  padding: 1rem;
-}
-
-.property-shell-grid {
-  display: grid;
-  min-height: calc(100vh - 2rem);
-  grid-template-columns: minmax(17rem, 18.5rem) minmax(0, 1fr) minmax(22rem, 28rem);
-  gap: 1rem;
-}
-
-.property-shell-grid-collapsed {
-  grid-template-columns: 6rem minmax(0, 1fr) minmax(22rem, 28rem);
-}
-
-.property-rail,
-.property-panel-pane,
-.property-viewer-pane {
-  position: relative;
-  min-height: 0;
+  height: 100dvh;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--color-border) 100%, transparent);
-  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.24);
+}
+
+.property-stage {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+}
+
+.property-viewer-pane,
+.property-rail,
+.property-panel {
+  position: absolute;
+  overflow: hidden;
+}
+
+.property-viewer-pane {
+  inset: 0;
+  background: linear-gradient(180deg, rgba(7, 11, 13, 0.94), rgba(10, 13, 15, 0.98));
+}
+
+.property-viewer-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 72% 18%, rgba(231, 201, 143, 0.18), transparent 16%),
+    radial-gradient(circle at 18% 76%, rgba(78, 94, 84, 0.22), transparent 22%),
+    linear-gradient(180deg, rgba(90, 103, 107, 0.58), rgba(179, 186, 173, 0.22) 42%, rgba(27, 34, 29, 0.12) 100%);
+  filter: saturate(0.84);
 }
 
 .property-rail,
-.property-panel-pane {
-  backdrop-filter: blur(24px);
-  background:
-    linear-gradient(180deg, rgba(33, 30, 26, 0.88), rgba(20, 18, 17, 0.94));
+.property-panel {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, rgba(23, 21, 19, 0.36), rgba(15, 14, 12, 0.54));
+  backdrop-filter: blur(28px);
+  box-shadow: 0 18px 70px rgba(0, 0, 0, 0.26);
 }
 
 .property-rail {
+  top: 1rem;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 5;
+  width: min(22rem, calc(100vw - 2rem));
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  padding: 1.25rem;
   border-radius: 1.75rem;
+}
+
+.property-rail-collapsed {
+  width: 5.5rem;
 }
 
 .property-rail-header {
@@ -189,12 +207,13 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
+  padding-bottom: 0;
 }
 
 .property-brand-lockup {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: 0.8rem;
   min-width: 0;
 }
 
@@ -205,7 +224,7 @@
 .property-brand-copy {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.3rem;
 }
 
 .property-brand-location,
@@ -219,13 +238,13 @@
 }
 
 .property-brand-name,
-.property-panel-pane h2,
+.property-panel-title,
 .property-viewer-overlay h2 {
   margin: 0;
   font-family: var(--font-editorial), serif;
-  font-size: clamp(2rem, 3vw, 3.2rem);
-  line-height: 0.96;
-  letter-spacing: -0.03em;
+  font-size: clamp(1.7rem, 2vw, 2.35rem);
+  line-height: 0.94;
+  letter-spacing: -0.025em;
 }
 
 .property-brand-tagline,
@@ -236,17 +255,21 @@
 .property-footnote {
   margin: 0;
   color: var(--color-muted-foreground);
-  line-height: 1.55;
+  line-height: 1.5;
 }
 
-.property-collapse-button {
-  margin-top: 0.1rem;
+.property-rail-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
 }
 
 .property-rail-nav {
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.45rem;
 }
 
 .property-nav-button {
@@ -268,57 +291,36 @@
   color: var(--color-muted-foreground);
 }
 
-.property-rail-summary {
-  margin-top: auto;
-}
-
 .property-rail-footer {
+  margin-top: auto;
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  gap: 0.75rem;
+  gap: 0.6rem;
   padding: 1rem;
-  border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.03);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
 }
 
-.property-rail-footer-icon {
-  flex: 0 0 auto;
-  color: var(--color-primary);
-}
-
-.property-viewer-pane {
-  border-radius: 2rem;
-  background:
-    radial-gradient(circle at top, rgba(255, 229, 180, 0.12), transparent 30%),
-    linear-gradient(180deg, rgba(12, 17, 20, 0.94), rgba(10, 12, 14, 0.98));
-}
-
-.property-viewer-backdrop {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 75% 12%, rgba(255, 226, 170, 0.42), transparent 18%),
-    radial-gradient(circle at 24% 78%, rgba(67, 88, 74, 0.34), transparent 24%),
-    linear-gradient(180deg, rgba(126, 142, 149, 0.7), rgba(183, 185, 168, 0.38) 45%, rgba(45, 54, 46, 0.18) 100%);
-  filter: saturate(0.95);
+.property-rail-footer p {
+  font-size: 0.84rem;
 }
 
 .property-viewer-overlay {
   position: absolute;
-  left: 1.5rem;
-  right: 1.5rem;
-  bottom: 1.5rem;
+  left: 50%;
+  bottom: 1rem;
+  z-index: 4;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  max-width: 36rem;
-  padding: 1.2rem 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 1.5rem;
-  background: rgba(20, 18, 16, 0.72);
-  backdrop-filter: blur(18px);
-  z-index: 4;
+  gap: 0.8rem;
+  width: min(34rem, calc(100vw - 2rem));
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.35rem;
+  background: rgba(20, 18, 16, 0.42);
+  backdrop-filter: blur(22px);
+  transform: translateX(-50%);
 }
 
 .property-viewer-overlay-top,
@@ -331,15 +333,7 @@
 .property-viewer-overlay-copy {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
-}
-
-.property-viewer-overlay-footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  color: var(--color-muted-foreground);
-  font-size: 0.8rem;
+  gap: 0.5rem;
 }
 
 .property-focus-pill {
@@ -373,7 +367,7 @@
 .viewer-stage {
   position: relative;
   height: 100%;
-  min-height: 42rem;
+  min-height: 100dvh;
   overflow: hidden;
   cursor: grab;
   user-select: none;
@@ -449,13 +443,13 @@
   position: absolute;
   z-index: 4;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(18, 18, 15, 0.62);
-  backdrop-filter: blur(14px);
+  background: rgba(18, 18, 15, 0.38);
+  backdrop-filter: blur(18px);
 }
 
 .viewer-hint {
   left: 50%;
-  bottom: 1.5rem;
+  bottom: 8rem;
   transform: translateX(-50%);
   padding: 0.7rem 1rem;
   border-radius: 999px;
@@ -473,18 +467,40 @@
   color: var(--color-muted-foreground);
 }
 
-.property-panel-pane {
+.property-panel {
+  top: 1rem;
+  left: calc(1rem + 22rem + 1rem);
+  bottom: 1rem;
+  z-index: 6;
+  width: min(28rem, calc(100vw - 25rem));
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1.25rem;
   border-radius: 1.75rem;
+}
+
+.property-rail-collapsed ~ .property-panel {
+  left: calc(1rem + 5.5rem + 1rem);
+  width: min(28rem, calc(100vw - 8.5rem));
 }
 
 .property-panel-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  gap: 1rem;
+}
+
+.property-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.property-panel-body {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
   gap: 1rem;
 }
 
@@ -497,12 +513,19 @@
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
-  padding-right: 0.5rem;
+  padding-right: 0.4rem;
 }
 
 .property-footnote {
   flex: 1 1 auto;
   font-size: 0.85rem;
+}
+
+.property-list-card {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(35, 27, 22, 0.42);
+  backdrop-filter: blur(14px);
+  box-shadow: none;
 }
 
 .property-contact-grid {
@@ -523,101 +546,51 @@
   align-items: center;
 }
 
-.property-shell-grid-collapsed .property-brand-copy,
-.property-shell-grid-collapsed .property-rail-summary,
-.property-shell-grid-collapsed .property-rail-footer,
-.property-shell-grid-collapsed .property-nav-label {
+.property-rail-collapsed .property-brand-copy,
+.property-rail-collapsed .property-rail-footer p,
+.property-rail-collapsed .property-nav-label {
   display: none;
 }
 
-.property-shell-grid-collapsed .property-rail {
-  align-items: center;
-  padding-inline: 0.8rem;
-}
-
-.property-shell-grid-collapsed .property-rail-header,
-.property-shell-grid-collapsed .property-brand-lockup,
-.property-shell-grid-collapsed .property-rail-nav {
-  width: 100%;
-}
-
-.property-shell-grid-collapsed .property-rail-nav {
-  align-items: center;
-}
-
-.property-shell-grid-collapsed .property-nav-button {
+.property-rail-collapsed .property-nav-button {
   justify-content: center;
 }
 
-@media (max-width: 1180px) {
-  .property-page-shell {
-    padding: 0.8rem;
-  }
-
-  .property-shell-grid,
-  .property-shell-grid-collapsed {
-    min-height: auto;
-    grid-template-columns: 1fr;
-  }
-
-  .property-rail,
-  .property-panel-pane {
-    border-radius: 1.35rem;
-  }
-
-  .property-viewer-pane {
-    min-height: 70vh;
-    border-radius: 1.6rem;
-  }
-
-  .viewer-stage {
-    min-height: 34rem;
-  }
-
-  .property-shell-grid-collapsed .property-brand-copy,
-  .property-shell-grid-collapsed .property-rail-summary,
-  .property-shell-grid-collapsed .property-rail-footer,
-  .property-shell-grid-collapsed .property-nav-label {
-    display: initial;
-  }
-
-  .property-shell-grid-collapsed .property-rail {
-    align-items: stretch;
-    padding-inline: 1.25rem;
-  }
-
-  .property-shell-grid-collapsed .property-nav-button {
-    justify-content: flex-start;
-  }
+.property-rail-collapsed .property-rail-footer {
+  align-items: center;
 }
 
-@media (max-width: 720px) {
-  .property-page-shell {
-    padding: 0.55rem;
+@media (max-width: 920px) {
+  body {
+    overflow: hidden;
   }
 
-  .property-shell-grid {
-    gap: 0.7rem;
+  .property-rail {
+    top: 0.75rem;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: auto;
+    width: auto;
+    max-width: none;
   }
 
-  .property-rail,
-  .property-panel-pane {
-    padding: 1rem;
+  .property-rail-collapsed {
+    width: auto;
   }
 
-  .property-viewer-pane {
-    min-height: 36rem;
-  }
-
-  .viewer-stage {
-    min-height: 36rem;
+  .property-panel {
+    top: 9.75rem;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    width: auto;
   }
 
   .property-viewer-overlay {
     left: 1rem;
-    right: 1rem;
     bottom: 1rem;
-    max-width: none;
+    width: min(30rem, calc(100vw - 2rem));
+    transform: none;
   }
 
   .property-focus-pill,
@@ -634,7 +607,7 @@
   }
 
   .viewer-hint {
-    bottom: 1rem;
+    bottom: 7.25rem;
     width: calc(100% - 2rem);
     text-align: center;
   }

@@ -89,23 +89,25 @@ export function SequenceViewer({
     context.clearRect(0, 0, canvas.width, canvas.height)
 
     const imageAspect = image.naturalWidth / image.naturalHeight
-    const canvasAspect = canvas.width / canvas.height
+    const targetWidth = canvas.width * config.frameScale
+    const targetHeight = canvas.height * config.frameScale
+    const targetAspect = targetWidth / targetHeight
 
-    let drawWidth = canvas.width
-    let drawHeight = canvas.height
+    let drawWidth = targetWidth
+    let drawHeight = targetHeight
 
-    if (imageAspect > canvasAspect) {
-      drawHeight = canvas.height
-      drawWidth = drawHeight * imageAspect
-    } else {
-      drawWidth = canvas.width
+    if (imageAspect > targetAspect) {
+      drawWidth = targetWidth
       drawHeight = drawWidth / imageAspect
+    } else {
+      drawHeight = targetHeight
+      drawWidth = drawHeight * imageAspect
     }
 
     const x = (canvas.width - drawWidth) / 2
     const y = (canvas.height - drawHeight) / 2
     context.drawImage(image, x, y, drawWidth, drawHeight)
-  }, [])
+  }, [config.frameScale])
 
   const setFrame = useCallback((nextFrame: number) => {
     const normalized = clampFrame(nextFrame)
