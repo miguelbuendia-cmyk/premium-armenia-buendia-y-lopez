@@ -113,16 +113,16 @@ export type ProjectContent = {
 }
 
 const torreAPositions: HotspotPosition[] = [
-  { frame: 0, x: 0.56, y: 0.47 },
-  { frame: 8, x: 0.58, y: 0.46 },
-  { frame: 16, x: 0.57, y: 0.45 },
-  { frame: 24, x: 0.53, y: 0.44 },
-  { frame: 32, x: 0.47, y: 0.43 },
-  { frame: 40, x: 0.42, y: 0.44 },
-  { frame: 48, x: 0.38, y: 0.46 },
-  { frame: 56, x: 0.39, y: 0.49 },
-  { frame: 64, x: 0.46, y: 0.5 },
-  { frame: 72, x: 0.53, y: 0.49 },
+  { frame: 0, x: 0.46, y: 0.43 },
+  { frame: 8, x: 0.48, y: 0.42 },
+  { frame: 16, x: 0.49, y: 0.41 },
+  { frame: 24, x: 0.46, y: 0.41 },
+  { frame: 32, x: 0.4, y: 0.42 },
+  { frame: 40, x: 0.34, y: 0.44 },
+  { frame: 48, x: 0.3, y: 0.47 },
+  { frame: 56, x: 0.31, y: 0.5 },
+  { frame: 64, x: 0.37, y: 0.5 },
+  { frame: 72, x: 0.43, y: 0.47 },
 ]
 
 const torreCPositions: HotspotPosition[] = [
