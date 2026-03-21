@@ -2,18 +2,18 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import type { Amenity, ViewerSequenceConfig } from "@/lib/premium-content"
+import type { ViewerSequenceConfig } from "@/lib/premium-content"
 
 type SequenceViewerProps = {
-  amenities: Amenity[]
   config: ViewerSequenceConfig
-  activeAmenityId: string | null
+  focusFrame?: number | null
+  onFrameChange?: (frame: number) => void
 }
 
 export function SequenceViewer({
-  amenities,
   config,
-  activeAmenityId,
+  focusFrame = null,
+  onFrameChange,
 }: SequenceViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const imagesRef = useRef<(HTMLImageElement | null)[]>(
@@ -25,7 +25,7 @@ export function SequenceViewer({
   const dragStartXRef = useRef(0)
   const dragStartFrameRef = useRef(0)
   const motionRafRef = useRef(0)
-  const previousAmenityRef = useRef<string | null>(activeAmenityId)
+  const previousFocusFrameRef = useRef<number | null>(focusFrame)
 
   const [loadedCount, setLoadedCount] = useState(0)
   const [hasInitialFrame, setHasInitialFrame] = useState(false)
@@ -35,10 +35,6 @@ export function SequenceViewer({
   const loadingPct = useMemo(() => {
     return Math.round((loadedCount / config.totalFrames) * 100)
   }, [config.totalFrames, loadedCount])
-
-  const amenityFrameMap = useMemo(() => {
-    return new Map(amenities.map((amenity) => [amenity.id, amenity.targetFrame]))
-  }, [amenities])
 
   const clampFrame = useCallback(
     (frame: number) => {
@@ -88,26 +84,36 @@ export function SequenceViewer({
 
     context.clearRect(0, 0, canvas.width, canvas.height)
 
-    const imageAspect = image.naturalWidth / image.naturalHeight
-    const targetWidth = canvas.width * config.frameScale
-    const targetHeight = canvas.height * config.frameScale
-    const targetAspect = targetWidth / targetHeight
+    const sourceInsetLeft = image.naturalWidth * config.sourceInsetLeft
+    const sourceInsetRight = image.naturalWidth * config.sourceInsetRight
+    const sourceX = Math.max(0, Math.floor(sourceInsetLeft))
+    const sourceWidth = Math.max(
+      1,
+      Math.floor(image.naturalWidth - sourceInsetLeft - sourceInsetRight)
+    )
+    const sourceHeight = image.naturalHeight
 
-    let drawWidth = targetWidth
-    let drawHeight = targetHeight
+    const coverScale =
+      Math.max(canvas.width / sourceWidth, canvas.height / sourceHeight) *
+      config.frameScale
 
-    if (imageAspect > targetAspect) {
-      drawWidth = targetWidth
-      drawHeight = drawWidth / imageAspect
-    } else {
-      drawHeight = targetHeight
-      drawWidth = drawHeight * imageAspect
-    }
+    const drawWidth = sourceWidth * coverScale
+    const drawHeight = sourceHeight * coverScale
 
     const x = (canvas.width - drawWidth) / 2
     const y = (canvas.height - drawHeight) / 2
-    context.drawImage(image, x, y, drawWidth, drawHeight)
-  }, [config.frameScale])
+    context.drawImage(
+      image,
+      sourceX,
+      0,
+      sourceWidth,
+      sourceHeight,
+      x,
+      y,
+      drawWidth,
+      drawHeight
+    )
+  }, [config.frameScale, config.sourceInsetLeft, config.sourceInsetRight])
 
   const setFrame = useCallback((nextFrame: number) => {
     const normalized = clampFrame(nextFrame)
@@ -316,15 +322,12 @@ export function SequenceViewer({
       return
     }
 
-    if (activeAmenityId === previousAmenityRef.current) {
+    if (focusFrame === previousFocusFrameRef.current) {
       return
     }
 
-    previousAmenityRef.current = activeAmenityId
-
-    const targetFrame =
-      (activeAmenityId ? amenityFrameMap.get(activeAmenityId) : undefined) ??
-      config.defaultFrame
+    previousFocusFrameRef.current = focusFrame
+    const targetFrame = focusFrame ?? config.defaultFrame
 
     const frameId = window.requestAnimationFrame(() => {
       animateToFrame(targetFrame)
@@ -334,12 +337,15 @@ export function SequenceViewer({
       window.cancelAnimationFrame(frameId)
     }
   }, [
-    activeAmenityId,
-    amenityFrameMap,
     animateToFrame,
     config.defaultFrame,
+    focusFrame,
     hasInitialFrame,
   ])
+
+  useEffect(() => {
+    onFrameChange?.(displayFrame)
+  }, [displayFrame, onFrameChange])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

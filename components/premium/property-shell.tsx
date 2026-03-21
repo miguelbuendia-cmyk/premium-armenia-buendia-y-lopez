@@ -2,14 +2,23 @@
 
 import { startTransition, useMemo, useState } from "react"
 import {
-  ArrowUpRight,
-  ChevronLeft,
-  ChevronRight,
+  Building2,
   CircleX,
-  Compass,
+  Ellipsis,
+  GlassWater,
   Images,
+  Leaf,
+  Dumbbell,
+  MapPinned,
   MessageCircleMore,
   Phone,
+  SprayCan,
+  Sparkles,
+  TentTree,
+  Trees,
+  WavesLadder,
+  VenetianMask,
+  Gamepad2,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -23,9 +32,16 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
-import type { Amenity, PanelSection, ProjectContent } from "@/lib/premium-content"
+import type {
+  Amenity,
+  DockSection,
+  Hotspot,
+  HotspotPosition,
+  PanelSection,
+  ProjectContent,
+  ResidenceCard,
+} from "@/lib/premium-content"
 
 import { SequenceViewer } from "./sequence-viewer"
 
@@ -33,45 +49,107 @@ type PropertyShellProps = {
   content: ProjectContent
 }
 
-const sectionIcons: Record<PanelSection, typeof Compass> = {
-  amenities: Compass,
-  gallery: Images,
-  contact: MessageCircleMore,
-}
+const dockSections: DockSection[] = [
+  "overview",
+  "location",
+  "amenities",
+  "residences",
+  "gallery",
+]
 
-const sectionOrder: PanelSection[] = ["amenities", "gallery", "contact"]
+const dockIcons = {
+  overview: Sparkles,
+  location: MapPinned,
+  amenities: Trees,
+  residences: Building2,
+  gallery: Images,
+} satisfies Record<DockSection, typeof Sparkles>
+
+const amenityIcons = {
+  piscina: WavesLadder,
+  turco: SprayCan,
+  "parque-ninos": TentTree,
+  jardines: Leaf,
+  coworking: Building2,
+  "zona-juegos": Gamepad2,
+  gym: Dumbbell,
+} as const
 
 export function PropertyShell({ content }: PropertyShellProps) {
   const [activeSection, setActiveSection] = useState<PanelSection | null>(null)
+  const [currentFrame, setCurrentFrame] = useState(content.viewer.defaultFrame)
   const [activeAmenityId, setActiveAmenityId] = useState<string | null>(
     content.amenities[0]?.id ?? null
   )
-  const [isRailCollapsed, setIsRailCollapsed] = useState(false)
+  const [activeResidenceId, setActiveResidenceId] = useState<string | null>(
+    content.residences[0]?.id ?? null
+  )
+  const [activeHotspotId, setActiveHotspotId] = useState<string | null>(null)
+  const [focusFrame, setFocusFrame] = useState<number | null>(null)
 
-  const activeAmenity = useMemo(() => {
-    return (
-      content.amenities.find((amenity) => amenity.id === activeAmenityId) ?? null
-    )
-  }, [activeAmenityId, content.amenities])
+  const highlightedSection =
+    activeSection && activeSection !== "contact" ? activeSection : "overview"
 
-  const handleSectionChange = (section: PanelSection) => {
+  const trackedHotspots = useMemo(() => {
+    return content.hotspots
+      .map((hotspot) => {
+        const position = resolveHotspotPosition(
+          hotspot.positions,
+          currentFrame,
+          content.viewer.totalFrames
+        )
+
+        if (!position) {
+          return null
+        }
+
+        return {
+          hotspot,
+          position,
+        }
+      })
+      .filter((item): item is { hotspot: Hotspot; position: HotspotPosition } =>
+        Boolean(item)
+      )
+  }, [content.hotspots, content.viewer.totalFrames, currentFrame])
+
+  const openSection = (section: PanelSection) => {
     startTransition(() => {
       setActiveSection((currentSection) =>
         currentSection === section ? null : section
       )
-
-      if (section !== "amenities") {
-        setActiveAmenityId(null)
-      }
     })
   }
 
-  const handleAmenityFocus = (amenityId: string) => {
+  const handleAmenityFocus = (amenity: Amenity) => {
     startTransition(() => {
       setActiveSection("amenities")
-      setActiveAmenityId((currentAmenityId) =>
-        currentAmenityId === amenityId ? null : amenityId
-      )
+      setActiveAmenityId(amenity.id)
+      setActiveHotspotId(null)
+      setFocusFrame(amenity.targetFrame)
+    })
+  }
+
+  const handleResidenceFocus = (residence: ResidenceCard) => {
+    startTransition(() => {
+      setActiveSection("residences")
+      setActiveResidenceId(residence.id)
+      setActiveHotspotId(residence.id)
+      setFocusFrame(residence.targetFrame)
+    })
+  }
+
+  const handleHotspotFocus = (hotspotId: string) => {
+    const hotspot = content.hotspots.find((item) => item.id === hotspotId)
+    if (!hotspot) {
+      return
+    }
+
+    startTransition(() => {
+      setActiveSection("residences")
+      setActiveHotspotId(hotspot.id)
+      setActiveResidenceId(hotspot.linkedResidenceId ?? hotspot.id)
+      setFocusFrame(hotspot.targetFrame)
     })
   }
 
@@ -79,277 +157,438 @@ export function PropertyShell({ content }: PropertyShellProps) {
     <div className="property-page-shell">
       <main className="property-stage">
         <div className="property-viewer-pane">
-          <div className="property-viewer-backdrop" aria-hidden="true" />
+          <div className="property-viewer-scrim" aria-hidden="true" />
           <SequenceViewer
-            amenities={content.amenities}
             config={content.viewer}
-            activeAmenityId={activeAmenityId}
+            focusFrame={focusFrame}
+            onFrameChange={setCurrentFrame}
           />
-
-          <div className="property-viewer-overlay">
-            <div className="property-viewer-overlay-top">
-              <Badge variant="secondary">{content.status}</Badge>
-              <Badge variant="outline">{content.location}</Badge>
-            </div>
-            <div className="property-viewer-overlay-copy">
-              <p className="property-viewer-kicker">Vista interactiva</p>
-              <h2>{content.viewerHeadline}</h2>
-              <p>{content.viewerBody}</p>
-            </div>
-          </div>
-
-          {activeAmenity ? (
-            <div className="property-focus-pill">
-              <span>En foco</span>
-              <strong>{activeAmenity.name}</strong>
-            </div>
-          ) : null}
         </div>
 
-        <Card
-          className={cn(
-            "property-rail",
-            isRailCollapsed && "property-rail-collapsed"
-          )}
-        >
-          <CardHeader className="property-rail-header">
-            <div className="property-brand-lockup">
-              <Badge variant="outline" className="property-brand-badge">
-                {content.eyebrow}
-              </Badge>
-              <div className="property-brand-copy">
-                <p className="property-brand-location">{content.location}</p>
-                <CardTitle className="property-brand-name">
-                  {content.name}
-                </CardTitle>
-                <CardDescription className="property-brand-tagline">
-                  {content.tagline}
-                </CardDescription>
-              </div>
-            </div>
-
+        <header className="property-topbar">
+          <div className="property-top-actions">
             <Button
               type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="property-collapse-button shrink-0"
-              onClick={() => setIsRailCollapsed((current) => !current)}
-              aria-expanded={!isRailCollapsed}
-              aria-label={
-                isRailCollapsed
-                  ? "Expandir panel lateral"
-                  : "Contraer panel lateral"
-              }
+              className="property-contact-button"
+              onClick={() => openSection("contact")}
             >
-              {isRailCollapsed ? <ChevronRight /> : <ChevronLeft />}
+              <MessageCircleMore data-icon="inline-start" />
+              {content.contactCtaLabel}
             </Button>
-          </CardHeader>
+            <Button
+              type="button"
+              size="icon"
+              variant="secondary"
+              className="property-menu-button"
+              aria-label="Abrir informacion del proyecto"
+              onClick={() => openSection("overview")}
+            >
+              <Ellipsis />
+            </Button>
+          </div>
+        </header>
 
-          <CardContent className="property-rail-body">
-            <Separator />
+        <div className="property-hotspot-layer" aria-label="Puntos destacados">
+          {trackedHotspots.map(({ hotspot, position }) => (
+            <button
+              key={hotspot.id}
+              type="button"
+              className={cn(
+                "property-hotspot",
+                activeHotspotId === hotspot.id && "property-hotspot-active"
+              )}
+              style={{
+                left: `${position.x * 100}%`,
+                top: `${position.y * 100}%`,
+              }}
+              onClick={() => handleHotspotFocus(hotspot.id)}
+            >
+              <span className="property-hotspot-pill">{hotspot.label}</span>
+              <span className="property-hotspot-ring" aria-hidden="true" />
+            </button>
+          ))}
+        </div>
 
-            <nav className="property-rail-nav" aria-label="Secciones del proyecto">
-              {sectionOrder.map((section) => {
-                const Icon = sectionIcons[section]
-                const isActive = activeSection === section
+        {activeSection === "amenities" ? (
+          <aside className="property-amenities-sidebar">
+            <div className="property-amenities-sidebar-inner">
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                className="property-amenities-close"
+                aria-label="Cerrar amenidades"
+                onClick={() => setActiveSection(null)}
+              >
+                <CircleX />
+              </Button>
 
-                return (
-                  <Button
-                    key={section}
+              <div className="property-amenities-header">
+                <div className="property-amenities-title-icon">
+                  <VenetianMask />
+                </div>
+                <h2 className="property-amenities-title">
+                  {content.panelTitles.amenities}
+                </h2>
+              </div>
+
+              <ScrollArea className="property-amenities-scroll">
+                <div className="property-amenities-list">
+                  <button
                     type="button"
-                    variant={isActive ? "secondary" : "ghost"}
-                    className="property-nav-button w-full justify-start"
-                    onClick={() => handleSectionChange(section)}
-                    title={content.panelTitles[section]}
+                    className="property-amenity-item property-amenity-item-featured"
+                    onClick={() => {
+                      startTransition(() => {
+                        setActiveAmenityId(null)
+                        setFocusFrame(content.viewer.defaultFrame)
+                      })
+                    }}
                   >
-                    <Icon data-icon="inline-start" />
-                    <span className="property-nav-label">
-                      {content.panelTitles[section]}
+                    <span className="property-amenity-icon">
+                      <Leaf />
                     </span>
-                  </Button>
-                )
-              })}
-            </nav>
-          </CardContent>
+                    <span>Ver todos</span>
+                  </button>
 
-          <CardFooter className="property-rail-footer">
-            <Badge variant="secondary">{content.availability}</Badge>
-            <p>{content.railNote}</p>
-          </CardFooter>
-        </Card>
+                  {content.amenities.map((amenity) => {
+                    const Icon =
+                      amenityIcons[amenity.id as keyof typeof amenityIcons] ??
+                      GlassWater
+
+                    return (
+                      <button
+                        key={amenity.id}
+                        type="button"
+                        className={cn(
+                          "property-amenity-item",
+                          activeAmenityId === amenity.id &&
+                            "property-amenity-item-active"
+                        )}
+                        onClick={() => handleAmenityFocus(amenity)}
+                      >
+                        <span className="property-amenity-icon">
+                          <Icon />
+                        </span>
+                        <span>{amenity.name}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </ScrollArea>
+
+              <button
+                type="button"
+                className="property-amenities-handle"
+                aria-label="Cerrar sidebar de amenidades"
+                onClick={() => setActiveSection(null)}
+              >
+                <span />
+              </button>
+            </div>
+          </aside>
+        ) : null}
 
         {activeSection ? (
-          <Card className="property-panel">
-            <CardHeader className="property-panel-header">
-              <div>
-                <p className="property-panel-kicker">Panel contextual</p>
-                <CardTitle className="property-panel-title">
-                  {content.panelTitles[activeSection]}
-                </CardTitle>
-              </div>
-              <div className="property-panel-actions">
-                <Badge variant="outline">{content.location}</Badge>
+          activeSection === "amenities" ? null : (
+            <Card className="property-dock-panel">
+              <CardHeader className="property-dock-panel-header">
+                <div>
+                  <p className="property-panel-kicker">{content.status}</p>
+                  <CardTitle className="property-panel-title">
+                    {content.panelTitles[activeSection]}
+                  </CardTitle>
+                  <CardDescription className="property-panel-description">
+                    {content.panelDescriptions[activeSection]}
+                  </CardDescription>
+                </div>
                 <Button
                   type="button"
-                  variant="ghost"
                   size="icon-sm"
-                  onClick={() => setActiveSection(null)}
+                  variant="ghost"
+                  className="property-panel-close"
                   aria-label="Cerrar panel"
+                  onClick={() => setActiveSection(null)}
                 >
                   <CircleX />
                 </Button>
-              </div>
-            </CardHeader>
+              </CardHeader>
 
-            <CardContent className="property-panel-body">
-              <p className="property-panel-description">
-                {content.panelDescriptions[activeSection]}
-              </p>
-
-              <Separator />
-
-              <ScrollArea className="property-panel-scroll">
-                <div className="property-panel-stack">
-                  {activeSection === "amenities" ? (
-                    <>
-                      {content.amenities.map((amenity) => (
-                        <AmenityCard
-                          key={amenity.id}
-                          amenity={amenity}
-                          isActive={activeAmenityId === amenity.id}
-                          onFocus={() => handleAmenityFocus(amenity.id)}
-                        />
-                      ))}
-                    </>
-                  ) : null}
-
-                  {activeSection === "gallery" ? (
-                    <>
-                      {content.gallery.map((item) => (
-                        <Card key={item.id} size="sm" className="property-list-card">
+              <CardContent className="property-dock-panel-body">
+                <ScrollArea className="property-dock-scroll">
+                  <div className="property-panel-stack">
+                    {activeSection === "overview" ? (
+                      <>
+                        <Card size="sm" className="property-info-card">
                           <CardHeader>
                             <div className="property-card-badges">
-                              <Badge variant="outline">Galería reservada</Badge>
-                              <Badge variant="secondary">{item.phase}</Badge>
+                              <Badge variant="secondary">
+                                {content.availability}
+                              </Badge>
+                              <Badge variant="outline">{content.location}</Badge>
                             </div>
-                            <CardTitle>{item.title}</CardTitle>
-                            <CardDescription>{item.description}</CardDescription>
+                            <CardTitle>{content.viewerHeadline}</CardTitle>
+                            <CardDescription>{content.summary}</CardDescription>
                           </CardHeader>
                           <CardContent>
-                            <p className="property-panel-copy">{item.note}</p>
+                            <p className="property-panel-copy">
+                              {content.viewerBody}
+                            </p>
                           </CardContent>
                         </Card>
-                      ))}
-                    </>
-                  ) : null}
 
-                  {activeSection === "contact" ? (
-                    <ContactCard content={content} />
-                  ) : null}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+                        <div className="property-stat-grid">
+                          {content.stats.map((stat) => (
+                            <Card
+                              key={stat.label}
+                              size="sm"
+                              className="property-stat-card"
+                            >
+                              <CardContent className="property-stat-card-content">
+                                <span>{stat.label}</span>
+                                <strong>{stat.value}</strong>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </>
+                    ) : null}
+
+                    {activeSection === "location" ? (
+                      <>
+                        {content.locationPoints.map((point) => (
+                          <Card
+                            key={point.id}
+                            size="sm"
+                            className="property-info-card"
+                          >
+                            <CardHeader>
+                              <CardTitle>{point.title}</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <p className="property-panel-copy">
+                                {point.description}
+                              </p>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </>
+                    ) : null}
+
+                    {activeSection === "residences" ? (
+                      <>
+                        {content.residences.map((residence) => (
+                          <ResidencePanelCard
+                            key={residence.id}
+                            residence={residence}
+                            isActive={activeResidenceId === residence.id}
+                            onFocus={() => handleResidenceFocus(residence)}
+                          />
+                        ))}
+                      </>
+                    ) : null}
+
+                    {activeSection === "gallery" ? (
+                      <>
+                        {content.gallery.map((item) => (
+                          <Card
+                            key={item.id}
+                            size="sm"
+                            className="property-info-card"
+                          >
+                            <CardHeader>
+                              <div className="property-card-badges">
+                                <Badge variant="outline">{item.phase}</Badge>
+                                <Badge variant="secondary">Reservado</Badge>
+                              </div>
+                              <CardTitle>{item.title}</CardTitle>
+                              <CardDescription>
+                                {item.description}
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <p className="property-panel-copy">{item.note}</p>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </>
+                    ) : null}
+
+                    {activeSection === "contact" ? (
+                      <ContactPanelCard content={content} />
+                    ) : null}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          )
         ) : null}
+
+        <div className="property-dock-shell">
+          <div className="property-dock-chevron" aria-hidden="true">
+            <span />
+          </div>
+
+          <nav className="property-dock" aria-label="Navegacion principal del proyecto">
+            {dockSections.map((section) => {
+              const Icon = dockIcons[section]
+              const isActive = highlightedSection === section
+
+              return (
+                <button
+                  key={section}
+                  type="button"
+                  className={cn(
+                    "property-dock-item",
+                    isActive && "property-dock-item-active"
+                  )}
+                  onClick={() => openSection(section)}
+                >
+                  <Icon />
+                  <span>{content.dockLabels[section]}</span>
+                </button>
+              )
+            })}
+          </nav>
+        </div>
       </main>
     </div>
   )
 }
 
-type AmenityCardProps = {
-  amenity: Amenity
+function resolveHotspotPosition(
+  positions: HotspotPosition[],
+  currentFrame: number,
+  totalFrames: number
+) {
+  if (!positions.length) {
+    return null
+  }
+
+  const ordered = [...positions].sort((a, b) => a.frame - b.frame)
+  const exact = ordered.find((position) => position.frame === currentFrame)
+  if (exact) {
+    return exact.visible === false ? null : exact
+  }
+
+  let previous = ordered[ordered.length - 1]
+  let next = ordered[0]
+
+  for (let index = 0; index < ordered.length; index += 1) {
+    const candidate = ordered[index]
+    if (candidate.frame < currentFrame) {
+      previous = candidate
+      continue
+    }
+
+    next = candidate
+    break
+  }
+
+  if (previous.visible === false || next.visible === false) {
+    return null
+  }
+
+  const normalizedPrevious = previous.frame
+  const normalizedNext =
+    next.frame > previous.frame ? next.frame : next.frame + totalFrames
+  const normalizedCurrent =
+    currentFrame < previous.frame ? currentFrame + totalFrames : currentFrame
+  const distance = normalizedNext - normalizedPrevious
+  const progress =
+    distance === 0 ? 0 : (normalizedCurrent - normalizedPrevious) / distance
+
+  return {
+    frame: currentFrame,
+    x: previous.x + (next.x - previous.x) * progress,
+    y: previous.y + (next.y - previous.y) * progress,
+    visible: true,
+  }
+}
+
+type ResidencePanelCardProps = {
+  residence: ResidenceCard
   isActive: boolean
   onFocus: () => void
 }
 
-function AmenityCard({ amenity, isActive, onFocus }: AmenityCardProps) {
+function ResidencePanelCard({
+  residence,
+  isActive,
+  onFocus,
+}: ResidencePanelCardProps) {
   return (
-    <Card size="sm" className="property-list-card">
+    <Card size="sm" className="property-info-card">
       <CardHeader>
         <div className="property-card-badges">
-          <Badge variant="outline">
-            Frame {String(amenity.targetFrame).padStart(3, "0")}
-          </Badge>
-          {isActive ? <Badge variant="secondary">En foco</Badge> : null}
+          <Badge variant="secondary">{residence.format}</Badge>
+          {isActive ? <Badge variant="outline">En escena</Badge> : null}
         </div>
-        <CardTitle>{amenity.name}</CardTitle>
-        <CardDescription>{amenity.highlight}</CardDescription>
+        <CardTitle>{residence.name}</CardTitle>
+        <CardDescription>{residence.description}</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <p className="property-panel-copy">{amenity.description}</p>
-        <div className="property-status-line">
-          <span>Estado visual</span>
-          <strong>Render pendiente</strong>
-        </div>
-      </CardContent>
-      <CardFooter className="justify-between gap-3">
-        <p className="property-footnote">{amenity.statusNote}</p>
+      <CardFooter className="property-card-footer">
+        <p className="property-footnote">{residence.statusNote}</p>
         <Button
           type="button"
           variant={isActive ? "secondary" : "outline"}
           onClick={onFocus}
         >
-          <Compass data-icon="inline-start" />
-          Enfocar
+          <Building2 data-icon="inline-start" />
+          Ver punto
         </Button>
       </CardFooter>
     </Card>
   )
 }
 
-function ContactCard({ content }: { content: ProjectContent }) {
+function ContactPanelCard({ content }: { content: ProjectContent }) {
   const { contact } = content
 
   return (
-    <Card className="property-contact-card property-list-card">
+    <Card className="property-info-card">
       <CardHeader>
         <div className="property-card-badges">
           <Badge variant="secondary">{contact.advisorLabel}</Badge>
           <Badge variant="outline">{contact.location}</Badge>
         </div>
-        <CardTitle>Cierra la conversación con un contacto directo.</CardTitle>
+        <CardTitle>Continua la conversacion desde este mismo micrositio.</CardTitle>
         <CardDescription>
-          Una salida comercial simple para continuar el recorrido por WhatsApp,
-          correo o llamada.
+          Una salida simple para WhatsApp, correo o llamada sin romper la
+          experiencia principal.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="property-contact-grid">
-          <div className="property-contact-row">
-            <span>Proyecto</span>
-            <strong>{contact.projectName}</strong>
-          </div>
-          <div className="property-contact-row">
-            <span>Teléfono</span>
-            <strong>{contact.phoneDisplay}</strong>
-          </div>
-          <div className="property-contact-row">
-            <span>Correo</span>
-            <strong>{contact.email}</strong>
-          </div>
-          <div className="property-contact-row">
-            <span>Horario</span>
-            <strong>{contact.schedule}</strong>
-          </div>
+      <CardContent className="property-contact-grid">
+        <div className="property-contact-row">
+          <span>Proyecto</span>
+          <strong>{contact.projectName}</strong>
+        </div>
+        <div className="property-contact-row">
+          <span>Telefono</span>
+          <strong>{contact.phoneDisplay}</strong>
+        </div>
+        <div className="property-contact-row">
+          <span>Correo</span>
+          <strong>{contact.email}</strong>
+        </div>
+        <div className="property-contact-row">
+          <span>Horario</span>
+          <strong>{contact.schedule}</strong>
         </div>
       </CardContent>
       <CardFooter className="property-contact-actions">
         <Button asChild>
           <a href={contact.whatsappHref} target="_blank" rel="noreferrer">
             <MessageCircleMore data-icon="inline-start" />
-            Abrir WhatsApp
+            WhatsApp
           </a>
         </Button>
         <Button asChild variant="outline">
-          <a href={contact.emailHref}>
-            <ArrowUpRight data-icon="inline-start" />
-            Enviar correo
-          </a>
+          <a href={contact.emailHref}>Correo</a>
         </Button>
         <Button asChild variant="ghost">
           <a href={contact.phoneHref}>
             <Phone data-icon="inline-start" />
-            Llamar ahora
+            Llamar
           </a>
         </Button>
       </CardFooter>

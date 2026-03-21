@@ -1,10 +1,26 @@
-export type PanelSection = "amenities" | "gallery" | "contact"
+export type DockSection =
+  | "overview"
+  | "location"
+  | "amenities"
+  | "residences"
+  | "gallery"
+
+export type PanelSection = DockSection | "contact"
 
 export type Amenity = {
   id: string
   name: string
   shortLabel: string
   highlight: string
+  description: string
+  statusNote: string
+  targetFrame: number
+}
+
+export type ResidenceCard = {
+  id: string
+  name: string
+  format: string
   description: string
   statusNote: string
   targetFrame: number
@@ -35,11 +51,41 @@ export type ViewerSequenceConfig = {
   framesDir: string
   defaultFrame: number
   frameScale: number
+  sourceInsetLeft: number
+  sourceInsetRight: number
   dragSensitivity: number
   autoplayTurns: number
   preloadBatchSize: number
   preloadTickMs: number
   dragHint: string
+}
+
+export type ProjectStat = {
+  label: string
+  value: string
+}
+
+export type LocationPoint = {
+  id: string
+  title: string
+  description: string
+}
+
+export type HotspotPosition = {
+  frame: number
+  x: number
+  y: number
+  visible?: boolean
+}
+
+export type Hotspot = {
+  id: string
+  label: string
+  title: string
+  description: string
+  targetFrame: number
+  linkedResidenceId?: string
+  positions: HotspotPosition[]
 }
 
 export type ProjectContent = {
@@ -52,126 +98,285 @@ export type ProjectContent = {
   summary: string
   viewerHeadline: string
   viewerBody: string
-  railNote: string
+  contactCtaLabel: string
+  dockLabels: Record<DockSection, string>
   panelTitles: Record<PanelSection, string>
   panelDescriptions: Record<PanelSection, string>
+  stats: ProjectStat[]
+  locationPoints: LocationPoint[]
+  hotspots: Hotspot[]
   amenities: Amenity[]
+  residences: ResidenceCard[]
   gallery: GalleryCard[]
   contact: ContactInfo
   viewer: ViewerSequenceConfig
 }
 
+const torreAPositions: HotspotPosition[] = [
+  { frame: 0, x: 0.56, y: 0.47 },
+  { frame: 8, x: 0.58, y: 0.46 },
+  { frame: 16, x: 0.57, y: 0.45 },
+  { frame: 24, x: 0.53, y: 0.44 },
+  { frame: 32, x: 0.47, y: 0.43 },
+  { frame: 40, x: 0.42, y: 0.44 },
+  { frame: 48, x: 0.38, y: 0.46 },
+  { frame: 56, x: 0.39, y: 0.49 },
+  { frame: 64, x: 0.46, y: 0.5 },
+  { frame: 72, x: 0.53, y: 0.49 },
+]
+
+const torreCPositions: HotspotPosition[] = [
+  { frame: 0, x: 0.63, y: 0.52 },
+  { frame: 8, x: 0.65, y: 0.51 },
+  { frame: 16, x: 0.63, y: 0.51 },
+  { frame: 24, x: 0.58, y: 0.5 },
+  { frame: 32, x: 0.51, y: 0.5 },
+  { frame: 40, x: 0.46, y: 0.51 },
+  { frame: 48, x: 0.43, y: 0.53 },
+  { frame: 56, x: 0.45, y: 0.56 },
+  { frame: 64, x: 0.53, y: 0.56 },
+  { frame: 72, x: 0.6, y: 0.54 },
+]
+
 export const premiumContent: ProjectContent = {
-  eyebrow: "Colección residencial",
-  name: "Premium Armenia Buendía y López",
-  tagline: "Una vitrina inmersiva para presentar el proyecto con presencia, calma y precisión.",
-  location: "Armenia, Quindío",
-  status: "Vista previa curada",
-  availability: "Secuencia 360 activa",
+  eyebrow: "Residencias de altura",
+  name: "Premium Armenia Buendia y Lopez",
+  tagline:
+    "Una portada inmersiva para presentar el proyecto desde una sola escena hero.",
+  location: "Armenia, Quindio",
+  status: "Vista interactiva",
+  availability: "Secuencia 360 lista",
   summary:
-    "Un recorrido digital de tono editorial para ventas privadas: arquitectura cálida, interfaz contenida y una vista 360 que concentra toda la atención.",
-  viewerHeadline: "Recorre la volumetría y cambia de enfoque sin salir de la misma escena.",
+    "Un micrositio comercial con una escena principal a pantalla completa, puntos de interes flotantes y una navegacion inferior inspirada en showroom inmobiliario.",
+  viewerHeadline:
+    "Explora la vista general y entra a los puntos clave desde la misma toma.",
   viewerBody:
-    "La experiencia principal vive en una secuencia real de 75 cuadros. El resto del sistema se diseñó para acompañar la presentación comercial mientras llegan los renders finales.",
-  railNote:
-    "Primera versión del micrositio. Las amenidades ya enfocan la secuencia; la galería queda preparada para recibir material definitivo.",
-  panelTitles: {
+    "El recorrido vive sobre la secuencia 360 existente, mientras la nueva interfaz organiza ubicacion, amenidades, inmuebles y galeria con una lectura mucho mas limpia.",
+  contactCtaLabel: "Contactanos",
+  dockLabels: {
+    overview: "Inicio",
+    location: "Ubicacion",
     amenities: "Amenidades",
-    gallery: "Galería",
-    contact: "Contacto",
+    residences: "Inmuebles",
+    gallery: "Galeria",
+  },
+  panelTitles: {
+    overview: "Vista general",
+    location: "Ubicacion privilegiada",
+    amenities: "Amenidades del proyecto",
+    residences: "Inventario destacado",
+    gallery: "Galeria comercial",
+    contact: "Contacto comercial",
   },
   panelDescriptions: {
+    overview:
+      "Una lectura rapida del proyecto para abrir la conversacion antes de entrar al detalle.",
+    location:
+      "Argumentos breves para explicar contexto, conectividad y presencia urbana desde la misma escena.",
     amenities:
-      "Selecciona una amenidad para llevar la cámara a un punto sugerido y revisar el relato comercial de cada espacio.",
+      "Cada amenidad puede enfocar la secuencia para guiar la presentacion sin cambiar de pantalla.",
+    residences:
+      "Tipologias y torres preparadas para recibir inventario comercial, brochure o material de cierre.",
     gallery:
-      "El módulo queda listo para recibir renders de apoyo, tomas interiores o piezas de campaña sin tocar la estructura.",
+      "Reserva el espacio para renders finales, tomas interiores y piezas de campana.",
     contact:
-      "Un cierre comercial directo, con acceso inmediato a WhatsApp y correo para continuar la conversación desde esta misma presentación.",
+      "Salida directa a WhatsApp, correo o llamada para convertir interes en conversacion.",
   },
+  stats: [
+    { label: "Estado", value: "Lanzamiento editorial" },
+    { label: "Recorrido", value: "75 frames con drag" },
+    { label: "Vista", value: "Hero a pantalla completa" },
+  ],
+  locationPoints: [
+    {
+      id: "entorno",
+      title: "Entorno verde y abierto",
+      description:
+        "La composicion principal resalta un borde natural amplio, ideal para vender calma, visuales largas y sensacion de retiro.",
+    },
+    {
+      id: "acceso",
+      title: "Acceso inmediato",
+      description:
+        "La llegada queda conectada a vias principales y a una fachada comercial activa que ayuda a anclar el proyecto.",
+    },
+    {
+      id: "lectura",
+      title: "Lectura comercial clara",
+      description:
+        "Desde esta toma se entienden volumenes, implantacion y jerarquia de torres sin depender de renders adicionales.",
+    },
+  ],
+  hotspots: [
+    {
+      id: "torre-a",
+      label: "Torre A",
+      title: "Torre A",
+      description:
+        "La primera fase del conjunto, pensada para lectura residencial principal y visibilidad comercial.",
+      targetFrame: 18,
+      linkedResidenceId: "torre-a",
+      positions: torreAPositions,
+    },
+    {
+      id: "torre-c",
+      label: "Torre C",
+      title: "Torre C",
+      description:
+        "La fase complementaria del proyecto, integrada al relato de amenidades y experiencia del conjunto.",
+      targetFrame: 25,
+      linkedResidenceId: "torre-c",
+      positions: torreCPositions,
+    },
+  ],
   amenities: [
     {
       id: "piscina",
-      name: "Piscina",
+      name: "Piscina ninos y adultos",
       shortLabel: "Piscina",
-      highlight: "Relajación exterior con lectura clara desde la vista general.",
+      highlight: "Zona acuatica principal para descanso familiar y permanencia.",
       description:
-        "Pensada como un remate visual de bienestar, la piscina introduce un momento de pausa dentro del recorrido y ayuda a explicar el carácter aspiracional del proyecto.",
-      statusNote: "Pendiente incorporar renders cerrados y detalles de mobiliario.",
-      targetFrame: 14,
+        "Presenta una amenidad de uso mixto que ayuda a vender bienestar, reunion familiar y tiempo libre dentro del proyecto.",
+      statusNote: "Lista para vincularse con visuales finales de la zona humeda.",
+      targetFrame: 12,
     },
     {
-      id: "lobby",
-      name: "Lobby",
-      shortLabel: "Lobby",
-      highlight: "El punto de llegada que fija el tono de hospitalidad.",
+      id: "turco",
+      name: "Turco",
+      shortLabel: "Turco",
+      highlight:
+        "Un complemento de bienestar orientado a relajacion y recuperacion.",
       description:
-        "La narrativa del acceso se concentra en materiales sobrios, iluminación contenida y una recepción que comunica orden, confianza y presencia de marca.",
-      statusNote: "Pendiente sumar perspectiva interior de acceso principal.",
+        "Se integra como argumento premium para reforzar la experiencia de descanso y el valor percibido del conjunto.",
+      statusNote: "Pendiente asociar render interior del espacio humedo.",
+      targetFrame: 18,
+    },
+    {
+      id: "parque-ninos",
+      name: "Parque de ninos",
+      shortLabel: "Parque",
+      highlight: "Espacio exterior pensado para juego seguro y vida familiar.",
+      description:
+        "Ayuda a comunicar un proyecto pensado para familias, uso cotidiano y estancia prolongada.",
+      statusNote: "Pendiente sumar escena de uso y paisajismo final.",
+      targetFrame: 22,
+    },
+    {
+      id: "jardines",
+      name: "Jardines",
+      shortLabel: "Jardines",
+      highlight:
+        "Paisajismo y zonas verdes como parte de la experiencia general.",
+      description:
+        "Los jardines amplifican la sensacion de calma y conectan visualmente el proyecto con el entorno natural.",
+      statusNote: "Pendiente integrar renders con vegetacion definitiva.",
       targetFrame: 28,
     },
     {
-      id: "gimnasio",
-      name: "Gimnasio",
-      shortLabel: "Gimnasio",
-      highlight: "Bienestar cotidiano integrado al lenguaje del proyecto.",
+      id: "coworking",
+      name: "Coworking",
+      shortLabel: "Coworking",
+      highlight:
+        "Espacio flexible para trabajo remoto, reuniones y productividad.",
       description:
-        "La propuesta presenta el gimnasio como una extensión natural de la rutina residencial: funcional, limpio y con identidad visual coherente con el conjunto.",
-      statusNote: "Pendiente incorporar visuales de equipamiento y ambientación.",
-      targetFrame: 49,
+        "Refuerza una narrativa contemporanea de residencia con soporte para trabajo diario y encuentros profesionales.",
+      statusNote: "Pendiente asociar visual interior del espacio colaborativo.",
+      targetFrame: 34,
     },
     {
-      id: "zona-social",
-      name: "Zona social",
-      shortLabel: "Zona social",
-      highlight: "Un espacio pensado para encuentros más que para circulación.",
+      id: "zona-juegos",
+      name: "Zona de juegos",
+      shortLabel: "Juegos",
+      highlight: "Area social para entretenimiento y actividades compartidas.",
       description:
-        "Esta amenidad se describe como el corazón compartido del proyecto, ideal para mostrar valor de convivencia, eventos pequeños y vida comunitaria.",
-      statusNote: "Pendiente agregar renders de uso y escenas con atmósfera.",
-      targetFrame: 63,
+        "Sirve para comunicar comunidad, permanencia y momentos de ocio dentro del conjunto.",
+      statusNote: "Pendiente sumar visuales de ambientacion y mobiliario.",
+      targetFrame: 42,
+    },
+    {
+      id: "gym",
+      name: "Gym",
+      shortLabel: "Gym",
+      highlight: "Bienestar cotidiano integrado a la propuesta residencial.",
+      description:
+        "Muestra una oferta activa y funcional para residentes que buscan entrenamiento sin salir del proyecto.",
+      statusNote: "Pendiente incorporar visuales del equipamiento final.",
+      targetFrame: 50,
+    },
+  ],
+  residences: [
+    {
+      id: "torre-a",
+      name: "Torre A",
+      format: "Residencias principales",
+      description:
+        "La fase inicial del proyecto, preparada para comunicar implantacion, acceso y valor de conjunto.",
+      statusNote: "Lista para poblar con metrajes, rangos y disponibilidad.",
+      targetFrame: 18,
+    },
+    {
+      id: "torre-c",
+      name: "Torre C",
+      format: "Residencias complementarias",
+      description:
+        "Una segunda fase vinculada a la experiencia del proyecto y a la lectura integral de amenidades.",
+      statusNote: "Lista para brochure comercial y argumentos de cierre.",
+      targetFrame: 25,
+    },
+    {
+      id: "signature-units",
+      name: "Signature units",
+      format: "Plantas premium",
+      description:
+        "Un bloque para destacar unidades con mejores visuales, terrazas o configuraciones especiales.",
+      statusNote: "Pendiente definir naming y ficha definitiva.",
+      targetFrame: 31,
     },
   ],
   gallery: [
     {
       id: "campana-principal",
-      title: "Render hero de campaña",
+      title: "Hero de campana",
       phase: "Pendiente de arte final",
       description:
-        "Reservado para la pieza principal de comunicación, lista para abrir pauta, brochure o portada de presentación comercial.",
-      note: "Se integrará aquí sin cambiar la navegación ni el comportamiento del shell.",
+        "Reservado para la pieza principal de pauta, brochure o portada de presentacion comercial.",
+      note: "Entrara aqui sin cambiar la navegacion ni la estructura del micrositio.",
     },
     {
       id: "interiores-clave",
       title: "Interiores clave",
       phase: "En espera de entrega",
       description:
-        "Espacio destinado a lobby, gimnasio y zonas comunes con composición vertical para lectura rápida desde escritorio o móvil.",
-      note: "El diseño ya contempla tarjetas editoriales y desplazamiento fluido.",
+        "Espacio destinado a lobby, fitness y zonas comunes con lectura rapida desde desktop o movil.",
+      note: "El layout ya contempla tarjetas editoriales y desplazamiento suave.",
     },
     {
       id: "apoyo-comercial",
-      title: "Piezas de apoyo comercial",
+      title: "Piezas de apoyo",
       phase: "Listo para poblar",
       description:
-        "Aquí podrán entrar vistas complementarias, acabados o argumentos visuales de cierre sin romper la jerarquía de la experiencia.",
-      note: "La estructura funciona aunque el proyecto siga creciendo en activos.",
+        "Aqui podran entrar acabados, visuales complementarias o argumentos de cierre sin romper la experiencia.",
+      note: "La base ya queda alineada con el look del ejemplo compartido.",
     },
   ],
   contact: {
-    projectName: "Premium Armenia Buendía y López",
+    projectName: "Premium Armenia Buendia y Lopez",
     advisorLabel: "Equipo comercial",
     phoneDisplay: "+57 300 000 0000",
     phoneHref: "tel:+573000000000",
     email: "info@proyecto.com",
     emailHref: "mailto:info@proyecto.com",
     whatsappHref: "https://wa.me/573000000000",
-    location: "Armenia, Quindío",
-    schedule: "Atención de lunes a sábado, previa cita.",
+    location: "Armenia, Quindio",
+    schedule: "Atencion de lunes a sabado, previa cita.",
   },
   viewer: {
     totalFrames: 75,
     framesDir: "/frames",
     defaultFrame: 0,
-    frameScale: 0.8,
+    frameScale: 1,
+    sourceInsetLeft: 0.06,
+    sourceInsetRight: 0.02,
     dragSensitivity: 0.45,
     autoplayTurns: 0.18,
     preloadBatchSize: 12,
