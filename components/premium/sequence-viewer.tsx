@@ -21,20 +21,39 @@ export function SequenceViewer({
   )
   const currentFrameRef = useRef(config.defaultFrame)
   const loadedCountRef = useRef(0)
+  const failedCountRef = useRef(0)
   const isDraggingRef = useRef(false)
   const dragStartXRef = useRef(0)
   const dragStartFrameRef = useRef(0)
   const motionRafRef = useRef(0)
-  const previousFocusFrameRef = useRef<number | null>(focusFrame)
+  const previousFocusFrameRef = useRef<number | null>(null)
 
-  const [loadedCount, setLoadedCount] = useState(0)
+  const [completedCount, setCompletedCount] = useState(0)
   const [hasInitialFrame, setHasInitialFrame] = useState(false)
   const [displayFrame, setDisplayFrame] = useState(config.defaultFrame)
   const [showHint, setShowHint] = useState(true)
 
+  const configSignature = useMemo(() => {
+    return [
+      config.framesDir,
+      config.totalFrames,
+      config.filePrefix,
+      config.fileSuffix,
+      config.padLength,
+      config.defaultFrame,
+    ].join("|")
+  }, [
+    config.defaultFrame,
+    config.filePrefix,
+    config.fileSuffix,
+    config.framesDir,
+    config.padLength,
+    config.totalFrames,
+  ])
+
   const loadingPct = useMemo(() => {
-    return Math.round((loadedCount / config.totalFrames) * 100)
-  }, [config.totalFrames, loadedCount])
+    return Math.round((completedCount / config.totalFrames) * 100)
+  }, [completedCount, config.totalFrames])
 
   const clampFrame = useCallback(
     (frame: number) => {
@@ -46,10 +65,11 @@ export function SequenceViewer({
   )
 
   const getFrameUrl = useCallback((index: number) => {
-    const padded = String(index).padStart(4, "0")
-    const fileName = `360\u00B0.${padded}_resultado.webp`
+    const padded = String(index).padStart(config.padLength, "0")
+    const normalizedPrefix = config.filePrefix.replace("Â°", "°")
+    const fileName = `${normalizedPrefix}${padded}${config.fileSuffix}`
     return `${config.framesDir}/${encodeURIComponent(fileName)}`
-  }, [config.framesDir])
+  }, [config.filePrefix, config.fileSuffix, config.framesDir, config.padLength])
 
   const stopFrameAnimation = useCallback(() => {
     if (!motionRafRef.current) {
@@ -183,6 +203,27 @@ export function SequenceViewer({
   }, [clampFrame, config.totalFrames, setFrame, stopFrameAnimation])
 
   useEffect(() => {
+    stopFrameAnimation()
+    imagesRef.current = Array(config.totalFrames).fill(null)
+    currentFrameRef.current = config.defaultFrame
+    loadedCountRef.current = 0
+    failedCountRef.current = 0
+    isDraggingRef.current = false
+    dragStartXRef.current = 0
+    dragStartFrameRef.current = config.defaultFrame
+    previousFocusFrameRef.current = null
+
+    setCompletedCount(0)
+    setHasInitialFrame(false)
+    setDisplayFrame(config.defaultFrame)
+    setShowHint(true)
+  }, [config.defaultFrame, config.totalFrames, configSignature, stopFrameAnimation])
+
+  useEffect(() => {
+    if (!showHint) {
+      return
+    }
+
     const hideHintTimer = window.setTimeout(() => {
       setShowHint(false)
     }, 5000)
@@ -190,10 +231,15 @@ export function SequenceViewer({
     return () => {
       window.clearTimeout(hideHintTimer)
     }
-  }, [])
+  }, [showHint])
 
   useEffect(() => {
     let isCancelled = false
+
+    const bumpCompletedCount = () => {
+      const nextCount = loadedCountRef.current + failedCountRef.current
+      setCompletedCount(nextCount)
+    }
 
     const loadFrame = (index: number) =>
       new Promise<boolean>((resolve) => {
@@ -207,7 +253,7 @@ export function SequenceViewer({
 
           imagesRef.current[index] = image
           loadedCountRef.current += 1
-          setLoadedCount(loadedCountRef.current)
+          bumpCompletedCount()
 
           if (index === config.defaultFrame) {
             setHasInitialFrame(true)
@@ -218,28 +264,44 @@ export function SequenceViewer({
         }
 
         image.onerror = () => {
+          if (!isCancelled) {
+            failedCountRef.current += 1
+            bumpCompletedCount()
+          }
+
           resolve(false)
         }
 
         image.src = getFrameUrl(index)
       })
 
+    const preloadOrder = Array.from(
+      new Set(
+        Array.from({ length: config.totalFrames }, (_, offset) => {
+          if (offset === 0) {
+            return config.defaultFrame
+          }
+
+          const direction = offset % 2 === 1 ? 1 : -1
+          const distance = Math.ceil(offset / 2)
+          return clampFrame(config.defaultFrame + direction * distance)
+        })
+      )
+    )
+
     const preloadInBatches = async () => {
       for (
         let start = 0;
-        start < config.totalFrames;
+        start < preloadOrder.length;
         start += config.preloadBatchSize
       ) {
         if (isCancelled) {
           return
         }
 
-        const batch = Array.from(
-          {
-            length: Math.min(config.preloadBatchSize, config.totalFrames - start),
-          },
-          (_, batchIndex) => loadFrame(start + batchIndex)
-        )
+        const batch = preloadOrder
+          .slice(start, start + config.preloadBatchSize)
+          .map((frameIndex) => loadFrame(frameIndex))
 
         await Promise.all(batch)
 
@@ -263,6 +325,7 @@ export function SequenceViewer({
     config.preloadBatchSize,
     config.preloadTickMs,
     config.totalFrames,
+    clampFrame,
     drawFrame,
     getFrameUrl,
   ])
@@ -281,6 +344,10 @@ export function SequenceViewer({
 
   useEffect(() => {
     if (!hasInitialFrame) {
+      return
+    }
+
+    if (config.autoplayTurns <= 0) {
       return
     }
 
@@ -455,10 +522,6 @@ export function SequenceViewer({
       {showHint && hasInitialFrame ? (
         <div className="viewer-hint">{config.dragHint}</div>
       ) : null}
-
-      <div className="viewer-frame-counter">
-        Frame {String(displayFrame).padStart(4, "0")}
-      </div>
     </div>
   )
 }
