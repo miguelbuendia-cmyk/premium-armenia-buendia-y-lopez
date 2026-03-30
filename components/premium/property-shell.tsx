@@ -4,6 +4,7 @@ import dynamic from "next/dynamic"
 import Image from "next/image"
 import { startTransition, useMemo, useState } from "react"
 import {
+  ArrowLeft,
   Building2,
   CircleX,
   Dumbbell,
@@ -42,8 +43,11 @@ import type {
   Amenity,
   DockSection,
   GalleryCard,
+  GallerySectionKey,
+  GallerySections,
   Hotspot,
   HotspotPosition,
+  LocationPoi,
   LocationRoad,
   PanelSection,
   ProjectContent,
@@ -59,6 +63,7 @@ const LocationMap = dynamic(
 
 type PropertyShellProps = {
   content: ProjectContent
+  gallerySections: GallerySections
 }
 
 const dockSections: DockSection[] = [
@@ -86,13 +91,37 @@ const amenityIcons = {
   gym: Dumbbell,
 } as const
 
-const roadSwatches = {
-  "via-armenia-pereira": "property-road-swatch-via-principal",
-  "acceso-principal": "property-road-swatch-acceso-principal",
-  "acceso-perimetral": "property-road-swatch-acceso",
-} as const
+const gallerySectionMeta = {
+  exteriores: {
+    badge: "Visuales urbanas",
+    description: "Fachadas, implantacion y escenas exteriores cargadas desde Galeria y Galeria.2.",
+    empty: "Aun no hay imagenes en Exteriores.",
+    title: "Exteriores",
+  },
+  interiores: {
+    badge: "Espacios interiores",
+    description: "Recorrido de ambientes interiores cargados desde la carpeta Interiores.",
+    empty: "Aun no hay imagenes en Interiores.",
+    title: "Interiores",
+  },
+  apartamentos: {
+    badge: "Planos y tipos",
+    description: "Recorrido editorial para revisar distribuciones, plantas y configuraciones residenciales.",
+    empty: "Aun no hay imagenes en Aptos Tipos.",
+    title: "Apartamentos",
+  },
+} satisfies Record<
+  GallerySectionKey,
+  { badge: string; description: string; empty: string; title: string }
+>
 
-export function PropertyShell({ content }: PropertyShellProps) {
+const galleryFolderOrder: GallerySectionKey[] = [
+  "exteriores",
+  "interiores",
+  "apartamentos",
+]
+
+export function PropertyShell({ content, gallerySections }: PropertyShellProps) {
   const [activeSection, setActiveSection] = useState<PanelSection | null>(null)
   const [currentFrame, setCurrentFrame] = useState(content.mainViewer.defaultFrame)
   const [activeAmenityId, setActiveAmenityId] = useState<string | null>(null)
@@ -101,9 +130,12 @@ export function PropertyShell({ content }: PropertyShellProps) {
   )
   const [activeHotspotId, setActiveHotspotId] = useState<string | null>(null)
   const [expandedAmenityId, setExpandedAmenityId] = useState<string | null>(null)
-  const [expandedGalleryId, setExpandedGalleryId] = useState<string | null>(null)
+  const [expandedGallery, setExpandedGallery] = useState<GalleryCard | null>(null)
   const [focusFrame, setFocusFrame] = useState<number | null>(null)
   const [selectedRoadId, setSelectedRoadId] = useState<string | null>(null)
+  const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null)
+  const [isTerrainSelected, setIsTerrainSelected] = useState(false)
+  const [isDockCollapsed, setIsDockCollapsed] = useState(false)
 
   const highlightedSection =
     activeSection && activeSection !== "contact" ? activeSection : "overview"
@@ -111,6 +143,13 @@ export function PropertyShell({ content }: PropertyShellProps) {
   const trackedHotspots = useMemo(() => {
     return content.hotspots
       .map((hotspot) => {
+        if (
+          hotspot.visibleFrameRange &&
+          !isFrameWithinRange(currentFrame, hotspot.visibleFrameRange)
+        ) {
+          return null
+        }
+
         const position = resolveHotspotPosition(
           hotspot.positions,
           currentFrame,
@@ -130,18 +169,25 @@ export function PropertyShell({ content }: PropertyShellProps) {
 
   const selectedRoad =
     content.locationMap.roads.find((road) => road.id === selectedRoadId) ?? null
+  const selectedPoi =
+    content.locationMap.pois.find((poi) => poi.id === selectedPoiId) ?? null
   const selectedAmenity =
     content.amenities.find((amenity) => amenity.id === activeAmenityId) ?? null
   const expandedAmenity =
     content.amenities.find((amenity) => amenity.id === expandedAmenityId) ?? null
-  const expandedGallery =
-    content.gallery.find((item) => item.id === expandedGalleryId) ?? null
+  const SelectedAmenityIcon =
+    selectedAmenity &&
+    (amenityIcons[selectedAmenity.id as keyof typeof amenityIcons] ?? GlassWater)
+  const shouldShowSelectedAmenityMarker =
+    activeSection === "amenities" &&
+    selectedAmenity &&
+    currentFrame === selectedAmenity.marker.frame
 
   const closeAmenities = () => {
     startTransition(() => {
       setActiveSection(null)
       setExpandedAmenityId(null)
-      setExpandedGalleryId(null)
+      setExpandedGallery(null)
     })
   }
 
@@ -161,6 +207,8 @@ export function PropertyShell({ content }: PropertyShellProps) {
 
       if (section === "location") {
         setSelectedRoadId(null)
+        setSelectedPoiId(null)
+        setIsTerrainSelected(true)
       }
     })
   }
@@ -197,6 +245,24 @@ export function PropertyShell({ content }: PropertyShellProps) {
     })
   }
 
+  const handleReturnHome = () => {
+    startTransition(() => {
+      setActiveSection(null)
+      setActiveAmenityId(null)
+      setActiveHotspotId(null)
+      setExpandedAmenityId(null)
+      setExpandedGallery(null)
+      setSelectedRoadId(null)
+      setSelectedPoiId(null)
+      setIsTerrainSelected(false)
+      setFocusFrame((currentFocusFrame) =>
+        currentFocusFrame === content.mainViewer.defaultFrame
+          ? null
+          : content.mainViewer.defaultFrame
+      )
+    })
+  }
+
   return (
     <div className="property-page-shell">
       <main className="property-stage">
@@ -219,6 +285,8 @@ export function PropertyShell({ content }: PropertyShellProps) {
           <LocationMap
             content={content.locationMap}
             selectedRoadId={selectedRoadId}
+            selectedPoiId={selectedPoiId}
+            isTerrainSelected={isTerrainSelected}
           />
         ) : null}
 
@@ -265,6 +333,23 @@ export function PropertyShell({ content }: PropertyShellProps) {
                 <span className="property-hotspot-ring" aria-hidden="true" />
               </button>
             ))}
+          </div>
+        ) : null}
+
+        {shouldShowSelectedAmenityMarker && selectedAmenity && SelectedAmenityIcon ? (
+          <div className="property-amenity-marker-layer" aria-hidden="true">
+            <div
+              className="property-amenity-marker"
+              style={{
+                left: `${selectedAmenity.marker.x * 100}%`,
+                top: `${selectedAmenity.marker.y * 100}%`,
+              }}
+            >
+              <span className="property-amenity-marker-badge">
+                <SelectedAmenityIcon />
+              </span>
+              <span className="property-amenity-marker-dot" />
+            </div>
           </div>
         ) : null}
 
@@ -317,13 +402,13 @@ export function PropertyShell({ content }: PropertyShellProps) {
             role="dialog"
             aria-modal="true"
             aria-label={expandedGallery.image.alt}
-            onClick={() => setExpandedGalleryId(null)}
+            onClick={() => setExpandedGallery(null)}
           >
             <button
               type="button"
               className="property-amenity-lightbox-close"
               aria-label="Cerrar imagen ampliada"
-              onClick={() => setExpandedGalleryId(null)}
+              onClick={() => setExpandedGallery(null)}
             >
               <CircleX />
             </button>
@@ -457,14 +542,38 @@ export function PropertyShell({ content }: PropertyShellProps) {
                       type="button"
                       className={cn(
                         "property-location-item",
-                        !selectedRoadId && "property-location-item-active"
+                        !selectedRoadId &&
+                          !selectedPoiId &&
+                          !isTerrainSelected &&
+                          "property-location-item-active"
                       )}
-                      onClick={() => setSelectedRoadId(null)}
+                      onClick={() => {
+                        setSelectedRoadId(null)
+                        setSelectedPoiId(null)
+                        setIsTerrainSelected(false)
+                      }}
                     >
-                      <span className="property-location-item-icon">
-                        <Landmark />
-                      </span>
                       <span>Ver todos</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={cn(
+                        "property-location-item",
+                        isTerrainSelected && "property-location-item-active"
+                      )}
+                      onClick={() => {
+                        setIsTerrainSelected(true)
+                        setSelectedRoadId(null)
+                        setSelectedPoiId(null)
+                      }}
+                    >
+                      <span
+                        className="property-location-road-legend"
+                        aria-hidden="true"
+                        style={{ backgroundColor: content.locationMap.terrain.strokeColor }}
+                      />
+                      <span>Lote del proyecto</span>
                     </button>
 
                     {content.locationMap.roads.map((road) => (
@@ -472,37 +581,49 @@ export function PropertyShell({ content }: PropertyShellProps) {
                         key={road.id}
                         road={road}
                         isActive={selectedRoadId === road.id}
-                        onClick={() => setSelectedRoadId(road.id)}
+                        onClick={() => {
+                          setSelectedRoadId(road.id)
+                          setSelectedPoiId(null)
+                          setIsTerrainSelected(false)
+                        }}
                       />
                     ))}
                   </div>
                 </ScrollArea>
               </div>
 
-              <div className="property-location-summary">
-                <p className="property-location-summary-label">
-                  Punto del proyecto
-                </p>
-                <strong>{content.locationMap.project.label}</strong>
-                <p>{content.location}</p>
-                {selectedRoad ? (
-                  <p className="property-location-summary-road">
-                    Ruta destacada: {selectedRoad.name}
-                  </p>
-                ) : (
-                  <p className="property-location-summary-road">
-                    Vista general con el proyecto y sus accesos principales.
-                  </p>
-                )}
+              <div className="property-location-section">
+                <div className="property-location-section-heading">
+                  <Landmark />
+                  <span>Malls y Restaurantes</span>
+                </div>
+
+                <ScrollArea className="property-location-scroll">
+                  <div className="property-location-list">
+                    {content.locationMap.pois.map((poi) => (
+                      <PoiItem
+                        key={poi.id}
+                        poi={poi}
+                        isActive={selectedPoiId === poi.id}
+                        onClick={() => {
+                          setSelectedPoiId(poi.id)
+                          setSelectedRoadId(null)
+                          setIsTerrainSelected(false)
+                        }}
+                      />
+                    ))}
+                  </div>
+                </ScrollArea>
               </div>
+
             </div>
           </aside>
         ) : null}
 
         {activeSection === "gallery" ? (
           <GalleryViewport
-            items={content.gallery}
-            onExpand={(id) => setExpandedGalleryId(id)}
+            sections={gallerySections}
+            onExpand={(item) => setExpandedGallery(item)}
             onClose={() => setActiveSection(null)}
           />
         ) : null}
@@ -596,31 +717,53 @@ export function PropertyShell({ content }: PropertyShellProps) {
         ) : null}
 
         <div className="property-dock-shell">
-          <div className="property-dock-chevron" aria-hidden="true">
+          <button
+            type="button"
+            className={cn(
+              "property-dock-chevron",
+              isDockCollapsed && "property-dock-chevron-collapsed"
+            )}
+            aria-label={
+              isDockCollapsed
+                ? "Mostrar menu principal"
+                : "Ocultar menu principal"
+            }
+            aria-expanded={!isDockCollapsed}
+            onClick={() => setIsDockCollapsed((current) => !current)}
+          >
             <span />
-          </div>
+          </button>
 
-          <nav className="property-dock" aria-label="Navegacion principal del proyecto">
-            {dockSections.map((section) => {
-              const Icon = dockIcons[section]
-              const isActive = highlightedSection === section
+          {!isDockCollapsed ? (
+            <nav className="property-dock" aria-label="Navegacion principal del proyecto">
+              {dockSections.map((section) => {
+                const Icon = dockIcons[section]
+                const isActive = highlightedSection === section
 
-              return (
-                <button
-                  key={section}
-                  type="button"
-                  className={cn(
-                    "property-dock-item",
-                    isActive && "property-dock-item-active"
-                  )}
-                  onClick={() => openSection(section)}
-                >
-                  <Icon />
-                  <span>{content.dockLabels[section]}</span>
-                </button>
-              )
-            })}
-          </nav>
+                return (
+                  <button
+                    key={section}
+                    type="button"
+                    className={cn(
+                      "property-dock-item",
+                      isActive && "property-dock-item-active"
+                    )}
+                    onClick={() => {
+                      if (section === "overview") {
+                        handleReturnHome()
+                        return
+                      }
+
+                      openSection(section)
+                    }}
+                  >
+                    <Icon />
+                    <span>{content.dockLabels[section]}</span>
+                  </button>
+                )
+              })}
+            </nav>
+          ) : null}
         </div>
       </main>
     </div>
@@ -628,16 +771,21 @@ export function PropertyShell({ content }: PropertyShellProps) {
 }
 
 function GalleryViewport({
-  items,
+  sections,
   onExpand,
   onClose,
 }: {
-  items: GalleryCard[]
-  onExpand: (id: string) => void
+  sections: GallerySections
+  onExpand: (item: GalleryCard) => void
   onClose: () => void
 }) {
+  const [selectedFolder, setSelectedFolder] = useState<GallerySectionKey | null>(null)
+  const activeSectionKey = selectedFolder ?? "exteriores"
+  const activeItems = sections[activeSectionKey]
+  const activeMeta = gallerySectionMeta[activeSectionKey]
+
   return (
-    <section className="property-gallery-viewport" aria-label="Galeria de renders">
+    <section className="property-gallery-viewport" aria-label="Galeria del proyecto">
       <button
         type="button"
         className="property-gallery-close"
@@ -647,27 +795,91 @@ function GalleryViewport({
         <CircleX />
       </button>
 
-      <div className="property-gallery-grid">
-        {items.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className="property-gallery-tile"
-            onClick={() => onExpand(item.id)}
-          >
-            <Image
-              src={item.image.src}
-              alt={item.image.alt}
-              fill
-              sizes="(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw"
-              className="property-gallery-media-image"
-            />
-            <span className="property-amenity-media-expand">
-              <Maximize2 />
-              <span>Ver grande</span>
-            </span>
-          </button>
-        ))}
+      <div className="property-gallery-shell">
+        {selectedFolder ? (
+          <>
+            <header className="property-gallery-header">
+              <div className="property-gallery-copy">
+                <button
+                  type="button"
+                  className="property-gallery-back"
+                  onClick={() => setSelectedFolder(null)}
+                >
+                  <ArrowLeft />
+                  <span>Volver a carpetas</span>
+                </button>
+                <h2 className="property-gallery-title">{activeMeta.title}</h2>
+              </div>
+            </header>
+
+            {activeItems.length ? (
+              <div className="property-gallery-grid">
+                {activeItems.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className="property-gallery-tile"
+                    onClick={() => onExpand(item)}
+                  >
+                    <Image
+                      src={item.image.src}
+                      alt={item.image.alt}
+                      fill
+                      sizes="(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw"
+                      className="property-gallery-media-image"
+                    />
+                    <span className="property-gallery-tile-copy">
+                      <span className="property-gallery-tile-phase">{item.phase}</span>
+                      <span className="property-gallery-tile-title">{item.title}</span>
+                    </span>
+                    <span className="property-amenity-media-expand">
+                      <Maximize2 />
+                      <span>Ver grande</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="property-gallery-empty">
+                <span className="property-gallery-empty-label">{activeMeta.title}</span>
+                <p>{activeMeta.empty}</p>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="property-gallery-folders">
+            {galleryFolderOrder.map((folderKey) => {
+              const meta = gallerySectionMeta[folderKey]
+              const coverItem = sections[folderKey][0] ?? null
+
+              return (
+                <button
+                  key={folderKey}
+                  type="button"
+                  className="property-gallery-folder-card"
+                  onClick={() => setSelectedFolder(folderKey)}
+                >
+                  <div className="property-gallery-folder-preview">
+                    {coverItem ? (
+                      <Image
+                        src={coverItem.image.src}
+                        alt={coverItem.image.alt}
+                        fill
+                        sizes="(max-width: 900px) 100vw, 50vw"
+                        className="property-gallery-media-image"
+                      />
+                    ) : (
+                      <div className="property-gallery-folder-placeholder">
+                        <span>{meta.title}</span>
+                      </div>
+                    )}
+                    <span className="property-gallery-folder-title">{meta.title}</span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
     </section>
   )
@@ -723,6 +935,17 @@ function resolveHotspotPosition(
   }
 }
 
+function isFrameWithinRange(
+  frame: number,
+  range: { start: number; end: number }
+) {
+  if (range.start <= range.end) {
+    return frame >= range.start && frame <= range.end
+  }
+
+  return frame >= range.start || frame <= range.end
+}
+
 function RoadItem({
   road,
   isActive,
@@ -732,18 +955,46 @@ function RoadItem({
   isActive: boolean
   onClick: () => void
 }) {
-  const swatchClass =
-    roadSwatches[road.id as keyof typeof roadSwatches] ??
-    "property-road-swatch-default"
-
   return (
     <button
       type="button"
       className={cn("property-location-item", isActive && "property-location-item-active")}
       onClick={onClick}
     >
-      <span className={cn("property-location-road-swatch", swatchClass)} />
+      <span
+        className="property-location-road-legend"
+        aria-hidden="true"
+        style={{ backgroundColor: road.color }}
+      />
       <span>{road.name}</span>
+    </button>
+  )
+}
+
+function PoiItem({
+  poi,
+  isActive,
+  onClick,
+}: {
+  poi: LocationPoi
+  isActive: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className={cn("property-location-item", isActive && "property-location-item-active")}
+      onClick={onClick}
+    >
+      <span
+        className="property-location-road-legend"
+        aria-hidden="true"
+        style={{ backgroundColor: poi.color }}
+      />
+      <span className="property-location-item-copy">
+        <span className="property-location-item-title">{poi.name}</span>
+        <span className="property-location-item-note">{poi.distanceLabel}</span>
+      </span>
     </button>
   )
 }
@@ -805,7 +1056,9 @@ function AmenityMediaPanel({
 
         <div className="property-amenity-detail-copy">
           <p>{amenity.description}</p>
-          <p className="property-footnote">{amenity.statusNote}</p>
+          {amenity.statusNote ? (
+            <p className="property-footnote">{amenity.statusNote}</p>
+          ) : null}
         </div>
       </CardContent>
     </Card>

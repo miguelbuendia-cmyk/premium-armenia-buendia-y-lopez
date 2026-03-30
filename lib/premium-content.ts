@@ -15,6 +15,11 @@ export type Amenity = {
   description: string
   statusNote: string
   targetFrame: number
+  marker: {
+    frame: number
+    x: number
+    y: number
+  }
   media: {
     src?: string
     alt: string
@@ -43,6 +48,10 @@ export type GalleryCard = {
     alt: string
   }
 }
+
+export type GallerySectionKey = "exteriores" | "interiores" | "apartamentos"
+
+export type GallerySections = Record<GallerySectionKey, GalleryCard[]>
 
 export type ContactInfo = {
   projectName: string
@@ -99,6 +108,10 @@ export type Hotspot = {
   targetFrame: number
   linkedResidenceId?: string
   positions: HotspotPosition[]
+  visibleFrameRange?: {
+    start: number
+    end: number
+  }
 }
 
 export type MapCoordinate = {
@@ -113,11 +126,21 @@ export type LocationRoad = {
   path: MapCoordinate[]
 }
 
+export type LocationPoi = {
+  id: string
+  category: "mall" | "restaurant"
+  name: string
+  distanceLabel: string
+  color: string
+  path: MapCoordinate[]
+}
+
 export type LocationMapContent = {
   title: string
   project: MapCoordinate & { label: string }
   initialView: MapCoordinate & { zoom: number }
   roads: LocationRoad[]
+  pois: LocationPoi[]
   terrain: {
     label: string
     fillColor: string
@@ -158,6 +181,15 @@ function scaleMainFrame(frame: number) {
   return Math.round(
     (frame * (NEXT_MAIN_TOTAL_FRAMES - 1)) / (LEGACY_MAIN_TOTAL_FRAMES - 1)
   )
+}
+
+function frameFromSequenceName(fileName: string) {
+  const match = fileName.match(/(\d{4})/)
+  if (!match) {
+    throw new Error(`No se pudo leer el frame desde "${fileName}"`)
+  }
+
+  return Number(match[1])
 }
 
 function scaleHotspotPositions(positions: HotspotPosition[]): HotspotPosition[] {
@@ -298,59 +330,13 @@ export const premiumContent: ProjectContent = {
       {
         id: "via-armenia-pereira",
         name: "Via Armenia - Pereira",
-        color: "#e39a2d",
+        color: "#d6a33a",
         path: [
-          { lat: 4.5756549, lng: -75.6447951 },
-          { lat: 4.5757882, lng: -75.6448017 },
-          { lat: 4.5760607, lng: -75.6448151 },
-          { lat: 4.5761028, lng: -75.6448172 },
-          { lat: 4.5765396, lng: -75.6448387 },
-          { lat: 4.5766019, lng: -75.6448418 },
-          { lat: 4.5768158, lng: -75.6448523 },
-          { lat: 4.5769492, lng: -75.6448589 },
-          { lat: 4.5770928, lng: -75.6448455 },
-          { lat: 4.5772167, lng: -75.6448251 },
-          { lat: 4.5773281, lng: -75.6448009 },
-          { lat: 4.5775018, lng: -75.6447403 },
-          { lat: 4.5775909, lng: -75.6447023 },
-          { lat: 4.5776954, lng: -75.6446589 },
-          { lat: 4.5777921, lng: -75.6446091 },
-          { lat: 4.5781291, lng: -75.6444695 },
-          { lat: 4.5784759, lng: -75.6443198 },
-          { lat: 4.5787178, lng: -75.6442382 },
-          { lat: 4.5788552, lng: -75.6441966 },
-          { lat: 4.5790148, lng: -75.644179 },
-          { lat: 4.5791462, lng: -75.6441659 },
-          { lat: 4.5792741, lng: -75.6441666 },
-          { lat: 4.5798403, lng: -75.6441593 },
-          { lat: 4.5801025, lng: -75.6441437 },
-          { lat: 4.5802406, lng: -75.6441233 },
-          { lat: 4.5803806, lng: -75.6440864 },
-          { lat: 4.5805302, lng: -75.6440265 },
-          { lat: 4.5807228, lng: -75.6439215 },
-          { lat: 4.5808875, lng: -75.643835 },
-          { lat: 4.5811633, lng: -75.6436872 },
-          { lat: 4.5812531, lng: -75.6436457 },
-          { lat: 4.5813875, lng: -75.643591 },
-          { lat: 4.5815498, lng: -75.6435442 },
-          { lat: 4.5821114, lng: -75.6433828 },
-          { lat: 4.5829051, lng: -75.6432482 },
-          { lat: 4.5829518, lng: -75.6432392 },
-        ],
-      },
-      {
-        id: "acceso-perimetral",
-        name: "Via perimetral",
-        color: "#4da864",
-        path: [
-          { lat: 4.576042, lng: -75.64805 },
-          { lat: 4.575957, lng: -75.64798 },
-          { lat: 4.575886, lng: -75.64792 },
-          { lat: 4.575842, lng: -75.647835 },
-          { lat: 4.575899, lng: -75.647745 },
-          { lat: 4.576011, lng: -75.64766 },
-          { lat: 4.576119, lng: -75.647616 },
-          { lat: 4.576227, lng: -75.647585 },
+          { lat: 4.57546, lng: -75.64613 },
+          { lat: 4.57608, lng: -75.64614 },
+          { lat: 4.57674, lng: -75.64612 },
+          { lat: 4.57736, lng: -75.64607 },
+          { lat: 4.57795, lng: -75.64603 },
         ],
       },
       {
@@ -360,6 +346,47 @@ export const premiumContent: ProjectContent = {
         path: [
           { lat: 4.576343, lng: -75.646606 },
           { lat: 4.576616, lng: -75.646344 },
+        ],
+      },
+    ],
+    pois: [
+      {
+        id: "restaurante-el-solar",
+        category: "restaurant",
+        name: "Restaurante el solar",
+        distanceLabel: "2.1 km",
+        color: "#cf6540",
+        path: [
+          { lat: 4.59155, lng: -75.64089 },
+          { lat: 4.591908, lng: -75.640814 },
+          { lat: 4.591837, lng: -75.640593 },
+          { lat: 4.591464, lng: -75.640698 },
+        ],
+      },
+      {
+        id: "mall-campestre",
+        category: "mall",
+        name: "Mall Campestre",
+        distanceLabel: "600 m",
+        color: "#5b8a5f",
+        path: [
+          { lat: 4.573313, lng: -75.646945 },
+          { lat: 4.573846, lng: -75.646678 },
+          { lat: 4.574125, lng: -75.647155 },
+          { lat: 4.573859, lng: -75.647303 },
+        ],
+      },
+      {
+        id: "mall-portico",
+        category: "mall",
+        name: "Mall Portico",
+        distanceLabel: "200 m",
+        color: "#3f7fd8",
+        path: [
+          { lat: 4.574304, lng: -75.645676 },
+          { lat: 4.574642, lng: -75.645165 },
+          { lat: 4.574178, lng: -75.6451 },
+          { lat: 4.573955, lng: -75.645254 },
         ],
       },
     ],
@@ -374,6 +401,10 @@ export const premiumContent: ProjectContent = {
       targetFrame: scaleMainFrame(18),
       linkedResidenceId: "torre-a",
       positions: torreAPositions,
+      visibleFrameRange: {
+        start: 103,
+        end: 13,
+      },
     },
     {
       id: "torre-c",
@@ -384,6 +415,10 @@ export const premiumContent: ProjectContent = {
       targetFrame: scaleMainFrame(25),
       linkedResidenceId: "torre-c",
       positions: torreCPositions,
+      visibleFrameRange: {
+        start: 103,
+        end: 13,
+      },
     },
   ],
   amenities: [
@@ -395,46 +430,18 @@ export const premiumContent: ProjectContent = {
       description:
         "Presenta una amenidad de uso mixto que ayuda a vender bienestar, reunion familiar y tiempo libre dentro del proyecto.",
       statusNote: "Render listo para presentar la zona humeda dentro del recorrido principal.",
-      targetFrame: scaleMainFrame(12),
+      targetFrame: frameFromSequenceName("360°.0047"),
+      marker: {
+        frame: frameFromSequenceName("360°.0047"),
+        x: 0.534,
+        y: 0.796,
+      },
       media: {
         src: "/Galeria/piscina.webp",
         alt: "Render de piscina ninos y adultos",
         placeholderLabel: "Render de piscina",
         placeholderNote:
           "Visual listo para ampliar y usar como apoyo comercial de la zona humeda.",
-      },
-    },
-    {
-      id: "turco",
-      name: "Turco",
-      shortLabel: "Turco",
-      highlight:
-        "Un complemento de bienestar orientado a relajacion y recuperacion.",
-      description:
-        "Se integra como argumento premium para reforzar la experiencia de descanso y el valor percibido del conjunto.",
-      statusNote: "Pendiente asociar render interior del espacio humedo.",
-      targetFrame: scaleMainFrame(18),
-      media: {
-        alt: "Render del turco",
-        placeholderLabel: "Render pendiente",
-        placeholderNote:
-          "Reserva este espacio para un render interior del turco con atmosfera, luz y acabados finales.",
-      },
-    },
-    {
-      id: "parque-ninos",
-      name: "Parque de ninos",
-      shortLabel: "Parque",
-      highlight: "Espacio exterior pensado para juego seguro y vida familiar.",
-      description:
-        "Ayuda a comunicar un proyecto pensado para familias, uso cotidiano y estancia prolongada.",
-      statusNote: "Pendiente sumar escena de uso y paisajismo final.",
-      targetFrame: scaleMainFrame(22),
-      media: {
-        alt: "Render del parque de ninos",
-        placeholderLabel: "Render pendiente",
-        placeholderNote:
-          "Ideal para una escena familiar con mobiliario, juego seguro y paisajismo definitivo.",
       },
     },
     {
@@ -446,7 +453,12 @@ export const premiumContent: ProjectContent = {
       description:
         "Los jardines amplifican la sensacion de calma y conectan visualmente el proyecto con el entorno natural.",
       statusNote: "Pendiente integrar renders con vegetacion definitiva.",
-      targetFrame: scaleMainFrame(28),
+      targetFrame: frameFromSequenceName("360°.0075"),
+      marker: {
+        frame: frameFromSequenceName("360°.0075"),
+        x: 0.537,
+        y: 0.68,
+      },
       media: {
         src: "/Jardines.webp",
         alt: "Render de jardines",
@@ -456,20 +468,25 @@ export const premiumContent: ProjectContent = {
       },
     },
     {
-      id: "coworking",
-      name: "Coworking",
-      shortLabel: "Coworking",
-      highlight:
-        "Espacio flexible para trabajo remoto, reuniones y productividad.",
+      id: "gym",
+      name: "Gym",
+      shortLabel: "Gym",
+      highlight: "Bienestar cotidiano integrado a la propuesta residencial.",
       description:
-        "Refuerza una narrativa contemporanea de residencia con soporte para trabajo diario y encuentros profesionales.",
-      statusNote: "Pendiente asociar visual interior del espacio colaborativo.",
-      targetFrame: scaleMainFrame(34),
+        "Un espacio disenado para el bienestar, la energia y la constancia.",
+      statusNote: "",
+      targetFrame: frameFromSequenceName("360°.0052"),
+      marker: {
+        frame: frameFromSequenceName("360°.0052"),
+        x: 0.659,
+        y: 0.749,
+      },
       media: {
-        alt: "Render de coworking",
+        src: "/GYM.webp",
+        alt: "Render del gimnasio",
         placeholderLabel: "Render pendiente",
         placeholderNote:
-          "Prepara aqui un render interior del espacio colaborativo con branding y mobiliario final.",
+          "Aqui podra entrar un render del gimnasio con equipamiento, luz y acabados de cierre.",
       },
     },
     {
@@ -478,10 +495,16 @@ export const premiumContent: ProjectContent = {
       shortLabel: "Juegos",
       highlight: "Area social para entretenimiento y actividades compartidas.",
       description:
-        "Sirve para comunicar comunidad, permanencia y momentos de ocio dentro del conjunto.",
-      statusNote: "Pendiente sumar visuales de ambientacion y mobiliario.",
-      targetFrame: scaleMainFrame(42),
+        "Zona de juegos con ping pong, futbolito y billar para compartir y disfrutar.",
+      statusNote: "",
+      targetFrame: frameFromSequenceName("360°.0055"),
+      marker: {
+        frame: frameFromSequenceName("360°.0055"),
+        x: 0.623,
+        y: 0.761,
+      },
       media: {
+        src: "/ZONA%20DE%20JUEGOS.webp",
         alt: "Render de zona de juegos",
         placeholderLabel: "Render pendiente",
         placeholderNote:
@@ -489,19 +512,71 @@ export const premiumContent: ProjectContent = {
       },
     },
     {
-      id: "gym",
-      name: "Gym",
-      shortLabel: "Gym",
-      highlight: "Bienestar cotidiano integrado a la propuesta residencial.",
+      id: "coworking",
+      name: "Coworking",
+      shortLabel: "Coworking",
+      highlight:
+        "Espacio flexible para trabajo remoto, reuniones y productividad.",
       description:
-        "Muestra una oferta activa y funcional para residentes que buscan entrenamiento sin salir del proyecto.",
-      statusNote: "Pendiente incorporar visuales del equipamiento final.",
-      targetFrame: scaleMainFrame(50),
+        "Trabaja sin desplazarte en un ambiente comodo y profesional.",
+      statusNote: "",
+      targetFrame: frameFromSequenceName("360°.0059"),
+      marker: {
+        frame: frameFromSequenceName("360°.0059"),
+        x: 0.615,
+        y: 0.694,
+      },
       media: {
-        alt: "Render del gimnasio",
+        src: "/COWORKING.webp",
+        alt: "Render de coworking",
         placeholderLabel: "Render pendiente",
         placeholderNote:
-          "Aqui podra entrar un render del gimnasio con equipamiento, luz y acabados de cierre.",
+          "Prepara aqui un render interior del espacio colaborativo con branding y mobiliario final.",
+      },
+    },
+    {
+      id: "parque-ninos",
+      name: "Parque de ninos",
+      shortLabel: "Parque",
+      highlight: "Espacio exterior pensado para juego seguro y vida familiar.",
+      description:
+        "Ayuda a comunicar un proyecto pensado para familias, uso cotidiano y estancia prolongada.",
+      statusNote: "Pendiente sumar escena de uso y paisajismo final.",
+      targetFrame: frameFromSequenceName("360°.0042"),
+      marker: {
+        frame: frameFromSequenceName("360°.0042"),
+        x: 0.452,
+        y: 0.705,
+      },
+      media: {
+        src: "/Turco.webp",
+        alt: "Render del parque de ninos",
+        placeholderLabel: "Render pendiente",
+        placeholderNote:
+          "Ideal para una escena familiar con mobiliario, juego seguro y paisajismo definitivo.",
+      },
+    },
+    {
+      id: "turco",
+      name: "Turco",
+      shortLabel: "Turco",
+      highlight:
+        "Un complemento de bienestar orientado a relajacion y recuperacion.",
+      description:
+        "Se integra como argumento premium para reforzar la experiencia de descanso y el valor percibido del conjunto.",
+      statusNote: "Rotacion focal sin tarjeta de render en esta etapa.",
+      targetFrame: frameFromSequenceName("360°.0038"),
+      marker: {
+        frame: frameFromSequenceName("360°.0038"),
+        x: 0.497,
+        y: 0.786,
+      },
+      media: {
+        src: "/Parque%20ni%C3%B1os.webp",
+        alt: "Visual de turco",
+        placeholderLabel: "Sin render",
+        placeholderNote:
+          "Turco rota la secuencia para enfocar su zona, sin abrir tarjeta lateral.",
       },
     },
   ],
@@ -536,18 +611,6 @@ export const premiumContent: ProjectContent = {
   ],
   gallery: [
     {
-      id: "portada-opcion-3",
-      title: "Portada principal",
-      phase: "Exterior",
-      description:
-        "Visual hero para presentar el proyecto desde la primera pantalla comercial.",
-      note: "Lista para brochure, landing y piezas de campana.",
-      image: {
-        src: "/Galeria/opcion 3 portada FINAL IMPRIMIR.webp",
-        alt: "Portada principal del proyecto",
-      },
-    },
-    {
       id: "portada-opcion-2",
       title: "Portada alternativa",
       phase: "Exterior",
@@ -557,18 +620,6 @@ export const premiumContent: ProjectContent = {
       image: {
         src: "/Galeria/Portada opcion 2 carpeta.webp",
         alt: "Portada alternativa del proyecto",
-      },
-    },
-    {
-      id: "sala-social",
-      title: "Sala principal",
-      phase: "Interior",
-      description:
-        "Render interior para mostrar amplitud, iluminacion y acabados del espacio social.",
-      note: "Pensado para reforzar vida cotidiana y sensacion premium.",
-      image: {
-        src: "/Galeria/sala final opcion 3.1 actualizada sin viga borrosa (1).webp",
-        alt: "Render de sala principal",
       },
     },
     {

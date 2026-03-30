@@ -14,6 +14,7 @@ import {
 
 import type {
   LocationMapContent,
+  LocationPoi,
   LocationRoad,
   MapCoordinate,
 } from "@/lib/premium-content"
@@ -21,9 +22,16 @@ import type {
 type LocationMapProps = {
   content: LocationMapContent
   selectedRoadId: string | null
+  selectedPoiId: string | null
+  isTerrainSelected: boolean
 }
 
-export function LocationMap({ content, selectedRoadId }: LocationMapProps) {
+export function LocationMap({
+  content,
+  selectedRoadId,
+  selectedPoiId,
+  isTerrainSelected,
+}: LocationMapProps) {
   const [serverRoads, setServerRoads] = useState<LocationRoad[] | null>(null)
 
   useEffect(() => {
@@ -72,6 +80,7 @@ export function LocationMap({ content, selectedRoadId }: LocationMapProps) {
 
   const roads = serverRoads ?? content.roads
   const selectedRoad = roads.find((road) => road.id === selectedRoadId) ?? null
+  const selectedPoi = content.pois.find((poi) => poi.id === selectedPoiId) ?? null
 
   const projectMarkerIcon = useMemo(() => {
     return L.divIcon({
@@ -102,7 +111,10 @@ export function LocationMap({ content, selectedRoadId }: LocationMapProps) {
         <MapViewportSync
           content={content}
           roads={roads}
+          pois={content.pois}
           selectedRoad={selectedRoad}
+          selectedPoi={selectedPoi}
+          isTerrainSelected={isTerrainSelected}
         />
 
         <Marker
@@ -114,10 +126,10 @@ export function LocationMap({ content, selectedRoadId }: LocationMapProps) {
           positions={content.terrain.path.map((point) => [point.lat, point.lng] as const)}
           pathOptions={{
             color: content.terrain.strokeColor,
-            weight: 3,
-            opacity: 0.9,
+            weight: isTerrainSelected ? 5 : 3,
+            opacity: isTerrainSelected ? 1 : 0.9,
             fillColor: content.terrain.fillColor,
-            fillOpacity: 0.38,
+            fillOpacity: isTerrainSelected ? 0.52 : 0.38,
           }}
         >
           <Tooltip direction="center" permanent className="property-map-terrain-label">
@@ -138,6 +150,25 @@ export function LocationMap({ content, selectedRoadId }: LocationMapProps) {
             }}
           />
         ))}
+
+        {content.pois.map((poi) => {
+          const isActive = selectedPoiId === poi.id
+          const isDimmed = Boolean(selectedPoiId) && !isActive
+
+          return (
+            <Polygon
+              key={poi.id}
+              positions={poi.path.map((point) => [point.lat, point.lng] as const)}
+              pathOptions={{
+                color: poi.color,
+                weight: isActive ? 4 : 2,
+                opacity: isActive ? 0.98 : isDimmed ? 0.4 : 0.7,
+                fillColor: poi.color,
+                fillOpacity: isActive ? 0.34 : isDimmed ? 0.08 : 0.18,
+              }}
+            />
+          )
+        })}
       </MapContainer>
     </div>
   )
@@ -146,11 +177,17 @@ export function LocationMap({ content, selectedRoadId }: LocationMapProps) {
 function MapViewportSync({
   content,
   roads,
+  pois,
   selectedRoad,
+  selectedPoi,
+  isTerrainSelected,
 }: {
   content: LocationMapContent
   roads: LocationRoad[]
+  pois: LocationPoi[]
   selectedRoad: LocationRoad | null
+  selectedPoi: LocationPoi | null
+  isTerrainSelected: boolean
 }) {
   const map = useMap()
 
@@ -160,17 +197,35 @@ function MapViewportSync({
         selectedRoad.path.map((point) => [point.lat, point.lng] as [number, number])
       )
 
-      bounds.extend([content.project.lat, content.project.lng])
-
       map.fitBounds(bounds, {
-        padding: [80, 80],
-        maxZoom: 16,
+        padding: [56, 56],
+        maxZoom: 17,
       })
       return
     }
 
-    const initialBounds = buildRoadBounds(roads)
-    initialBounds.extend([content.project.lat, content.project.lng])
+    if (selectedPoi) {
+      const center = getPolygonCenter(selectedPoi.path)
+      map.flyTo([center.lat, center.lng], Math.max(map.getZoom(), 17), {
+        animate: true,
+        duration: 0.85,
+      })
+      return
+    }
+
+    if (isTerrainSelected) {
+      const terrainBounds = L.latLngBounds(
+        content.terrain.path.map((point) => [point.lat, point.lng] as [number, number])
+      )
+
+      map.fitBounds(terrainBounds, {
+        padding: [56, 56],
+        maxZoom: 18,
+      })
+      return
+    }
+
+    const initialBounds = buildLocationBounds(content, roads, pois)
 
     map.fitBounds(initialBounds, {
       padding: [80, 80],
@@ -180,16 +235,29 @@ function MapViewportSync({
     content.initialView.zoom,
     content.project.lat,
     content.project.lng,
+    content.terrain.path,
+    isTerrainSelected,
     map,
+    pois,
     roads,
+    selectedPoi,
     selectedRoad,
   ])
 
   return null
 }
 
-function buildRoadBounds(roads: LocationRoad[]) {
-  const allPoints = roads.flatMap((road) => road.path)
+function buildLocationBounds(
+  content: LocationMapContent,
+  roads: LocationRoad[],
+  pois: LocationPoi[]
+) {
+  const allPoints = [
+    content.project,
+    ...content.terrain.path,
+    ...roads.flatMap((road) => road.path),
+    ...pois.flatMap((poi) => poi.path),
+  ]
   const firstPoint = allPoints[0] ?? { lat: 4.576863, lng: -75.646213 }
   const bounds = L.latLngBounds([
     [firstPoint.lat, firstPoint.lng],
@@ -201,4 +269,23 @@ function buildRoadBounds(roads: LocationRoad[]) {
   })
 
   return bounds
+}
+
+function getPolygonCenter(path: MapCoordinate[]) {
+  if (!path.length) {
+    return { lat: 4.576863, lng: -75.646213 }
+  }
+
+  const totals = path.reduce(
+    (accumulator, point) => ({
+      lat: accumulator.lat + point.lat,
+      lng: accumulator.lng + point.lng,
+    }),
+    { lat: 0, lng: 0 }
+  )
+
+  return {
+    lat: totals.lat / path.length,
+    lng: totals.lng / path.length,
+  }
 }
