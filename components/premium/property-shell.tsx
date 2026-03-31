@@ -2,15 +2,17 @@
 
 import dynamic from "next/dynamic"
 import Image from "next/image"
-import { startTransition, useMemo, useState } from "react"
+import { startTransition, type ReactNode, useMemo, useState } from "react"
 import {
   ArrowLeft,
   Building2,
+  ChevronDown,
   CircleX,
   Dumbbell,
   Ellipsis,
   Gamepad2,
   GlassWater,
+  GraduationCap,
   Images,
   Landmark,
   Leaf,
@@ -47,6 +49,7 @@ import type {
   GallerySections,
   Hotspot,
   HotspotPosition,
+  LocationEducationPoint,
   LocationPoi,
   LocationRoad,
   PanelSection,
@@ -121,6 +124,8 @@ const galleryFolderOrder: GallerySectionKey[] = [
   "apartamentos",
 ]
 
+type LocationAccordionSection = "roads" | "pois" | "education"
+
 export function PropertyShell({ content, gallerySections }: PropertyShellProps) {
   const [activeSection, setActiveSection] = useState<PanelSection | null>(null)
   const [currentFrame, setCurrentFrame] = useState(content.mainViewer.defaultFrame)
@@ -134,8 +139,11 @@ export function PropertyShell({ content, gallerySections }: PropertyShellProps) 
   const [focusFrame, setFocusFrame] = useState<number | null>(null)
   const [selectedRoadId, setSelectedRoadId] = useState<string | null>(null)
   const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null)
+  const [selectedEducationId, setSelectedEducationId] = useState<string | null>(null)
   const [isTerrainSelected, setIsTerrainSelected] = useState(false)
   const [isDockCollapsed, setIsDockCollapsed] = useState(false)
+  const [openLocationSection, setOpenLocationSection] =
+    useState<LocationAccordionSection | null>("roads")
 
   const highlightedSection =
     activeSection && activeSection !== "contact" ? activeSection : "overview"
@@ -171,6 +179,10 @@ export function PropertyShell({ content, gallerySections }: PropertyShellProps) 
     content.locationMap.roads.find((road) => road.id === selectedRoadId) ?? null
   const selectedPoi =
     content.locationMap.pois.find((poi) => poi.id === selectedPoiId) ?? null
+  const selectedEducationPoint =
+    content.locationMap.educationPoints.find(
+      (educationPoint) => educationPoint.id === selectedEducationId
+    ) ?? null
   const selectedAmenity =
     content.amenities.find((amenity) => amenity.id === activeAmenityId) ?? null
   const expandedAmenity =
@@ -206,11 +218,19 @@ export function PropertyShell({ content, gallerySections }: PropertyShellProps) 
       }
 
       if (section === "location") {
+        setOpenLocationSection("roads")
         setSelectedRoadId(null)
         setSelectedPoiId(null)
+        setSelectedEducationId(null)
         setIsTerrainSelected(true)
       }
     })
+  }
+
+  const toggleLocationSection = (section: LocationAccordionSection) => {
+    setOpenLocationSection((currentSection) =>
+      currentSection === section ? null : section
+    )
   }
 
   const handleAmenityFocus = (amenity: Amenity) => {
@@ -286,6 +306,7 @@ export function PropertyShell({ content, gallerySections }: PropertyShellProps) 
             content={content.locationMap}
             selectedRoadId={selectedRoadId}
             selectedPoiId={selectedPoiId}
+            selectedEducationId={selectedEducationId}
             isTerrainSelected={isTerrainSelected}
           />
         ) : null}
@@ -530,90 +551,122 @@ export function PropertyShell({ content, gallerySections }: PropertyShellProps) 
                 </h2>
               </div>
 
-              <div className="property-location-section">
-                <div className="property-location-section-heading">
-                  <Route />
-                  <span>Vias de acceso</span>
-                </div>
-
-                <ScrollArea className="property-location-scroll">
-                  <div className="property-location-list">
-                    <button
-                      type="button"
-                      className={cn(
-                        "property-location-item",
-                        !selectedRoadId &&
-                          !selectedPoiId &&
-                          !isTerrainSelected &&
-                          "property-location-item-active"
-                      )}
-                      onClick={() => {
-                        setSelectedRoadId(null)
-                        setSelectedPoiId(null)
-                        setIsTerrainSelected(false)
-                      }}
-                    >
-                      <span>Ver todos</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className={cn(
-                        "property-location-item",
-                        isTerrainSelected && "property-location-item-active"
-                      )}
-                      onClick={() => {
-                        setIsTerrainSelected(true)
-                        setSelectedRoadId(null)
-                        setSelectedPoiId(null)
-                      }}
-                    >
-                      <span
-                        className="property-location-road-legend"
-                        aria-hidden="true"
-                        style={{ backgroundColor: content.locationMap.terrain.strokeColor }}
-                      />
-                      <span>Lote del proyecto</span>
-                    </button>
-
-                    {content.locationMap.roads.map((road) => (
-                      <RoadItem
-                        key={road.id}
-                        road={road}
-                        isActive={selectedRoadId === road.id}
+              <div className="property-location-accordion">
+                <LocationAccordionSectionCard
+                  title="Vias de acceso"
+                  icon={Route}
+                  isOpen={openLocationSection === "roads"}
+                  onToggle={() => toggleLocationSection("roads")}
+                >
+                  <ScrollArea className="property-location-scroll">
+                    <div className="property-location-list">
+                      <button
+                        type="button"
+                        className={cn(
+                          "property-location-item",
+                          !selectedRoadId &&
+                            !selectedPoiId &&
+                            !selectedEducationId &&
+                            !isTerrainSelected &&
+                            "property-location-item-active"
+                        )}
                         onClick={() => {
-                          setSelectedRoadId(road.id)
-                          setSelectedPoiId(null)
-                          setIsTerrainSelected(false)
-                        }}
-                      />
-                    ))}
-                  </div>
-                </ScrollArea>
-              </div>
-
-              <div className="property-location-section">
-                <div className="property-location-section-heading">
-                  <Landmark />
-                  <span>Malls y Restaurantes</span>
-                </div>
-
-                <ScrollArea className="property-location-scroll">
-                  <div className="property-location-list">
-                    {content.locationMap.pois.map((poi) => (
-                      <PoiItem
-                        key={poi.id}
-                        poi={poi}
-                        isActive={selectedPoiId === poi.id}
-                        onClick={() => {
-                          setSelectedPoiId(poi.id)
                           setSelectedRoadId(null)
+                          setSelectedPoiId(null)
+                          setSelectedEducationId(null)
                           setIsTerrainSelected(false)
                         }}
-                      />
-                    ))}
-                  </div>
-                </ScrollArea>
+                      >
+                        <span>Ver todos</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={cn(
+                          "property-location-item",
+                          isTerrainSelected && "property-location-item-active"
+                        )}
+                        onClick={() => {
+                          setIsTerrainSelected(true)
+                          setSelectedRoadId(null)
+                          setSelectedPoiId(null)
+                          setSelectedEducationId(null)
+                        }}
+                      >
+                        <span
+                          className="property-location-road-legend"
+                          aria-hidden="true"
+                          style={{ backgroundColor: content.locationMap.terrain.strokeColor }}
+                        />
+                        <span>Lote del proyecto</span>
+                      </button>
+
+                      {content.locationMap.roads.map((road) => (
+                        <RoadItem
+                          key={road.id}
+                          road={road}
+                          isActive={selectedRoadId === road.id}
+                          onClick={() => {
+                            setSelectedRoadId(road.id)
+                            setSelectedPoiId(null)
+                            setSelectedEducationId(null)
+                            setIsTerrainSelected(false)
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </LocationAccordionSectionCard>
+
+                <LocationAccordionSectionCard
+                  title="Malls y Restaurantes"
+                  icon={Landmark}
+                  isOpen={openLocationSection === "pois"}
+                  onToggle={() => toggleLocationSection("pois")}
+                >
+                  <ScrollArea className="property-location-scroll">
+                    <div className="property-location-list">
+                      {content.locationMap.pois.map((poi) => (
+                        <PoiItem
+                          key={poi.id}
+                          poi={poi}
+                          isActive={selectedPoiId === poi.id}
+                          onClick={() => {
+                            setSelectedPoiId(poi.id)
+                            setSelectedRoadId(null)
+                            setSelectedEducationId(null)
+                            setIsTerrainSelected(false)
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </LocationAccordionSectionCard>
+
+                <LocationAccordionSectionCard
+                  title="Colegios y universidades"
+                  icon={GraduationCap}
+                  isOpen={openLocationSection === "education"}
+                  onToggle={() => toggleLocationSection("education")}
+                >
+                  <ScrollArea className="property-location-scroll">
+                    <div className="property-location-list">
+                      {content.locationMap.educationPoints.map((educationPoint) => (
+                        <EducationPointItem
+                          key={educationPoint.id}
+                          educationPoint={educationPoint}
+                          isActive={selectedEducationPoint?.id === educationPoint.id}
+                          onClick={() => {
+                            setSelectedEducationId(educationPoint.id)
+                            setSelectedRoadId(null)
+                            setSelectedPoiId(null)
+                            setIsTerrainSelected(false)
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </LocationAccordionSectionCard>
               </div>
 
             </div>
@@ -996,6 +1049,84 @@ function PoiItem({
         <span className="property-location-item-note">{poi.distanceLabel}</span>
       </span>
     </button>
+  )
+}
+
+function EducationPointItem({
+  educationPoint,
+  isActive,
+  onClick,
+}: {
+  educationPoint: LocationEducationPoint
+  isActive: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className={cn("property-location-item", isActive && "property-location-item-active")}
+      onClick={onClick}
+    >
+      <span
+        className="property-location-education-legend"
+        aria-hidden="true"
+        style={{ color: educationPoint.color }}
+      >
+        <GraduationCap />
+      </span>
+      <span className="property-location-item-copy">
+        <span className="property-location-item-title">{educationPoint.name}</span>
+        <span className="property-location-item-note">
+          {educationPoint.distanceLabel}
+        </span>
+      </span>
+    </button>
+  )
+}
+
+function LocationAccordionSectionCard({
+  title,
+  icon: Icon,
+  isOpen,
+  onToggle,
+  children,
+}: {
+  title: string
+  icon: typeof Route
+  isOpen: boolean
+  onToggle: () => void
+  children: ReactNode
+}) {
+  return (
+    <section
+      className={cn(
+        "property-location-section",
+        isOpen && "property-location-section-open"
+      )}
+    >
+      <button
+        type="button"
+        className={cn(
+          "property-location-section-toggle",
+          isOpen && "property-location-section-toggle-open"
+        )}
+        aria-expanded={isOpen}
+        onClick={onToggle}
+      >
+        <span className="property-location-section-heading">
+          <Icon />
+          <span>{title}</span>
+        </span>
+        <ChevronDown
+          className={cn(
+            "property-location-section-chevron",
+            isOpen && "property-location-section-chevron-open"
+          )}
+        />
+      </button>
+
+      {isOpen ? <div className="property-location-section-content">{children}</div> : null}
+    </section>
   )
 }
 

@@ -22,11 +22,14 @@ export function SequenceViewer({
   const currentFrameRef = useRef(config.defaultFrame)
   const loadedCountRef = useRef(0)
   const failedCountRef = useRef(0)
+  const loadedFramesRef = useRef<Set<number>>(new Set())
+  const failedFramesRef = useRef<Set<number>>(new Set())
   const isDraggingRef = useRef(false)
   const dragStartXRef = useRef(0)
   const dragStartFrameRef = useRef(0)
   const motionRafRef = useRef(0)
   const previousFocusFrameRef = useRef<number | null>(null)
+  const hasPlayedIntroRef = useRef(false)
 
   const [completedCount, setCompletedCount] = useState(0)
   const [hasInitialFrame, setHasInitialFrame] = useState(false)
@@ -54,6 +57,28 @@ export function SequenceViewer({
   const loadingPct = useMemo(() => {
     return Math.round((completedCount / config.totalFrames) * 100)
   }, [completedCount, config.totalFrames])
+
+  const introTargetFrame = useMemo(() => {
+    return Math.max(0, Math.round(config.totalFrames * config.autoplayTurns))
+  }, [config.autoplayTurns, config.totalFrames])
+
+  const introFrames = useMemo(() => {
+    const minReadyFrames = Math.max(1, config.autoplayMinReadyFrames)
+    const lastIntroFrame = Math.min(
+      config.totalFrames - 1,
+      Math.max(introTargetFrame, minReadyFrames - 1)
+    )
+
+    return Array.from({ length: lastIntroFrame + 1 }, (_, index) => index)
+  }, [config.autoplayMinReadyFrames, config.totalFrames, introTargetFrame])
+
+  const isIntroReady = useMemo(() => {
+    return introFrames.every((frame) => loadedFramesRef.current.has(frame))
+  }, [completedCount, introFrames])
+
+  const shouldSkipIntro = useMemo(() => {
+    return introFrames.some((frame) => failedFramesRef.current.has(frame))
+  }, [completedCount, introFrames])
 
   const clampFrame = useCallback(
     (frame: number) => {
@@ -208,10 +233,13 @@ export function SequenceViewer({
     currentFrameRef.current = config.defaultFrame
     loadedCountRef.current = 0
     failedCountRef.current = 0
+    loadedFramesRef.current = new Set()
+    failedFramesRef.current = new Set()
     isDraggingRef.current = false
     dragStartXRef.current = 0
     dragStartFrameRef.current = config.defaultFrame
     previousFocusFrameRef.current = null
+    hasPlayedIntroRef.current = false
 
     setCompletedCount(0)
     setHasInitialFrame(false)
@@ -253,6 +281,7 @@ export function SequenceViewer({
 
           imagesRef.current[index] = image
           loadedCountRef.current += 1
+          loadedFramesRef.current.add(index)
           bumpCompletedCount()
 
           if (index === config.defaultFrame) {
@@ -266,6 +295,7 @@ export function SequenceViewer({
         image.onerror = () => {
           if (!isCancelled) {
             failedCountRef.current += 1
+            failedFramesRef.current.add(index)
             bumpCompletedCount()
           }
 
@@ -275,7 +305,7 @@ export function SequenceViewer({
         image.src = getFrameUrl(index)
       })
 
-    const preloadOrder = Array.from(
+    const remainingFrames = Array.from(
       new Set(
         Array.from({ length: config.totalFrames }, (_, offset) => {
           if (offset === 0) {
@@ -287,7 +317,9 @@ export function SequenceViewer({
           return clampFrame(config.defaultFrame + direction * distance)
         })
       )
-    )
+    ).filter((frameIndex) => !introFrames.includes(frameIndex))
+
+    const preloadOrder = [...introFrames, ...remainingFrames]
 
     const preloadInBatches = async () => {
       for (
@@ -321,6 +353,7 @@ export function SequenceViewer({
       isCancelled = true
     }
   }, [
+    config.autoplayMinReadyFrames,
     config.defaultFrame,
     config.preloadBatchSize,
     config.preloadTickMs,
@@ -328,6 +361,7 @@ export function SequenceViewer({
     clampFrame,
     drawFrame,
     getFrameUrl,
+    introFrames,
   ])
 
   useEffect(() => {
@@ -343,7 +377,7 @@ export function SequenceViewer({
   }, [setFrame])
 
   useEffect(() => {
-    if (!hasInitialFrame) {
+    if (!hasInitialFrame || hasPlayedIntroRef.current) {
       return
     }
 
@@ -351,11 +385,22 @@ export function SequenceViewer({
       return
     }
 
+    if (focusFrame !== null || isDraggingRef.current) {
+      return
+    }
+
+    if (!isIntroReady) {
+      if (shouldSkipIntro) {
+        hasPlayedIntroRef.current = true
+      }
+      return
+    }
+
+    hasPlayedIntroRef.current = true
     let rafId = 0
     let lastTs = 0
     let elapsed = 0
-    const durationMs = 3600
-    const targetTurn = config.totalFrames * config.autoplayTurns
+    const durationMs = 2600
 
     const animate = (timestamp: number) => {
       if (!lastTs) {
@@ -368,7 +413,7 @@ export function SequenceViewer({
 
       const progress = Math.min(1, elapsed / durationMs)
       const eased = 1 - (1 - progress) ** 3
-      const targetFrame = Math.round(targetTurn * eased)
+      const targetFrame = Math.round(introTargetFrame * eased)
 
       setFrame(targetFrame)
 
@@ -382,7 +427,15 @@ export function SequenceViewer({
     return () => {
       window.cancelAnimationFrame(rafId)
     }
-  }, [config.autoplayTurns, config.totalFrames, hasInitialFrame, setFrame])
+  }, [
+    config.autoplayTurns,
+    focusFrame,
+    hasInitialFrame,
+    introTargetFrame,
+    isIntroReady,
+    setFrame,
+    shouldSkipIntro,
+  ])
 
   useEffect(() => {
     if (!hasInitialFrame) {

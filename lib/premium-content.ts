@@ -77,6 +77,7 @@ export type ViewerSequenceConfig = {
   sourceInsetRight: number
   dragSensitivity: number
   autoplayTurns: number
+  autoplayMinReadyFrames: number
   preloadBatchSize: number
   preloadTickMs: number
   dragHint: string
@@ -135,12 +136,22 @@ export type LocationPoi = {
   path: MapCoordinate[]
 }
 
+export type LocationEducationPoint = {
+  id: string
+  category: "school" | "university"
+  name: string
+  distanceLabel: string
+  color: string
+  location: MapCoordinate
+}
+
 export type LocationMapContent = {
   title: string
   project: MapCoordinate & { label: string }
   initialView: MapCoordinate & { zoom: number }
   roads: LocationRoad[]
   pois: LocationPoi[]
+  educationPoints: LocationEducationPoint[]
   terrain: {
     label: string
     fillColor: string
@@ -332,11 +343,13 @@ export const premiumContent: ProjectContent = {
         name: "Via Armenia - Pereira",
         color: "#d6a33a",
         path: [
-          { lat: 4.57546, lng: -75.64613 },
-          { lat: 4.57608, lng: -75.64614 },
-          { lat: 4.57674, lng: -75.64612 },
-          { lat: 4.57736, lng: -75.64607 },
-          { lat: 4.57795, lng: -75.64603 },
+          { lat: 4.573982, lng: -75.643984 },
+          { lat: 4.575201, lng: -75.643908 },
+          { lat: 4.576514, lng: -75.643821 },
+          { lat: 4.577861, lng: -75.643707 },
+          { lat: 4.579226, lng: -75.643511 },
+          { lat: 4.580554, lng: -75.643214 },
+          { lat: 4.581823, lng: -75.642871 },
         ],
       },
       {
@@ -388,6 +401,41 @@ export const premiumContent: ProjectContent = {
           { lat: 4.574178, lng: -75.6451 },
           { lat: 4.573955, lng: -75.645254 },
         ],
+      },
+    ],
+    educationPoints: [
+      {
+        id: "universidad-antonio-narino",
+        category: "university",
+        name: "Universidad Antonio Nariño",
+        distanceLabel: "290m",
+        color: "#7a5ce0",
+        location: {
+          lat: 4.577247629672778,
+          lng: -75.6450332430679,
+        },
+      },
+      {
+        id: "gi-school",
+        category: "school",
+        name: "GI School",
+        distanceLabel: "2,42Km",
+        color: "#4b82d9",
+        location: {
+          lat: 4.59532013542859,
+          lng: -75.63482497533205,
+        },
+      },
+      {
+        id: "colegio-san-luis-rey",
+        category: "school",
+        name: "Colegio San Luis Rey",
+        distanceLabel: "641m",
+        color: "#3fa26d",
+        location: {
+          lat: 4.57148006987282,
+          lng: -75.64737730604907,
+        },
       },
     ],
   },
@@ -568,8 +616,8 @@ export const premiumContent: ProjectContent = {
       targetFrame: frameFromSequenceName("360°.0038"),
       marker: {
         frame: frameFromSequenceName("360°.0038"),
-        x: 0.497,
-        y: 0.786,
+        x: 0.502,
+        y: 0.79,
       },
       media: {
         src: "/Parque%20ni%C3%B1os.webp",
@@ -682,6 +730,7 @@ export const premiumContent: ProjectContent = {
     sourceInsetRight: 0,
     dragSensitivity: 0.45,
     autoplayTurns: 0.18,
+    autoplayMinReadyFrames: 20,
     preloadBatchSize: 8,
     preloadTickMs: 45,
     dragHint: "Arrastra para girar la vista del proyecto",

@@ -13,6 +13,7 @@ import {
 } from "react-leaflet"
 
 import type {
+  LocationEducationPoint,
   LocationMapContent,
   LocationPoi,
   LocationRoad,
@@ -23,6 +24,7 @@ type LocationMapProps = {
   content: LocationMapContent
   selectedRoadId: string | null
   selectedPoiId: string | null
+  selectedEducationId: string | null
   isTerrainSelected: boolean
 }
 
@@ -30,6 +32,7 @@ export function LocationMap({
   content,
   selectedRoadId,
   selectedPoiId,
+  selectedEducationId,
   isTerrainSelected,
 }: LocationMapProps) {
   const [serverRoads, setServerRoads] = useState<LocationRoad[] | null>(null)
@@ -81,6 +84,10 @@ export function LocationMap({
   const roads = serverRoads ?? content.roads
   const selectedRoad = roads.find((road) => road.id === selectedRoadId) ?? null
   const selectedPoi = content.pois.find((poi) => poi.id === selectedPoiId) ?? null
+  const selectedEducationPoint =
+    content.educationPoints.find(
+      (educationPoint) => educationPoint.id === selectedEducationId
+    ) ?? null
 
   const projectMarkerIcon = useMemo(() => {
     return L.divIcon({
@@ -93,6 +100,28 @@ export function LocationMap({
       iconSize: [28, 28],
       iconAnchor: [14, 14],
     })
+  }, [])
+
+  const educationMarkerIcons = useMemo(() => {
+    const buildIcon = (isActive: boolean) =>
+      L.divIcon({
+        className: "property-map-education-marker",
+        html: `
+          <div class="property-map-education-marker-shell${
+            isActive ? " property-map-education-marker-shell-active" : ""
+          }">
+            <span class="property-map-education-marker-roof"></span>
+            <span class="property-map-education-marker-base"></span>
+          </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+      })
+
+    return {
+      default: buildIcon(false),
+      active: buildIcon(true),
+    }
   }, [])
 
   return (
@@ -112,8 +141,10 @@ export function LocationMap({
           content={content}
           roads={roads}
           pois={content.pois}
+          educationPoints={content.educationPoints}
           selectedRoad={selectedRoad}
           selectedPoi={selectedPoi}
+          selectedEducationPoint={selectedEducationPoint}
           isTerrainSelected={isTerrainSelected}
         />
 
@@ -169,6 +200,24 @@ export function LocationMap({
             />
           )
         })}
+
+        {content.educationPoints.map((educationPoint) => {
+          const isActive = selectedEducationId === educationPoint.id
+
+          return (
+            <Marker
+              key={educationPoint.id}
+              position={[educationPoint.location.lat, educationPoint.location.lng]}
+              icon={isActive ? educationMarkerIcons.active : educationMarkerIcons.default}
+            >
+              {isActive ? (
+                <Tooltip direction="top" offset={[0, -16]} className="property-map-education-label">
+                  {educationPoint.name}
+                </Tooltip>
+              ) : null}
+            </Marker>
+          )
+        })}
       </MapContainer>
     </div>
   )
@@ -178,15 +227,19 @@ function MapViewportSync({
   content,
   roads,
   pois,
+  educationPoints,
   selectedRoad,
   selectedPoi,
+  selectedEducationPoint,
   isTerrainSelected,
 }: {
   content: LocationMapContent
   roads: LocationRoad[]
   pois: LocationPoi[]
+  educationPoints: LocationEducationPoint[]
   selectedRoad: LocationRoad | null
   selectedPoi: LocationPoi | null
+  selectedEducationPoint: LocationEducationPoint | null
   isTerrainSelected: boolean
 }) {
   const map = useMap()
@@ -213,6 +266,21 @@ function MapViewportSync({
       return
     }
 
+    if (selectedEducationPoint) {
+      map.flyTo(
+        [
+          selectedEducationPoint.location.lat,
+          selectedEducationPoint.location.lng,
+        ],
+        17,
+        {
+          animate: true,
+          duration: 0.85,
+        }
+      )
+      return
+    }
+
     if (isTerrainSelected) {
       const terrainBounds = L.latLngBounds(
         content.terrain.path.map((point) => [point.lat, point.lng] as [number, number])
@@ -225,7 +293,7 @@ function MapViewportSync({
       return
     }
 
-    const initialBounds = buildLocationBounds(content, roads, pois)
+    const initialBounds = buildLocationBounds(content, roads, pois, educationPoints)
 
     map.fitBounds(initialBounds, {
       padding: [80, 80],
@@ -238,8 +306,10 @@ function MapViewportSync({
     content.terrain.path,
     isTerrainSelected,
     map,
+    educationPoints,
     pois,
     roads,
+    selectedEducationPoint,
     selectedPoi,
     selectedRoad,
   ])
@@ -250,13 +320,15 @@ function MapViewportSync({
 function buildLocationBounds(
   content: LocationMapContent,
   roads: LocationRoad[],
-  pois: LocationPoi[]
+  pois: LocationPoi[],
+  educationPoints: LocationEducationPoint[]
 ) {
   const allPoints = [
     content.project,
     ...content.terrain.path,
     ...roads.flatMap((road) => road.path),
     ...pois.flatMap((poi) => poi.path),
+    ...educationPoints.map((educationPoint) => educationPoint.location),
   ]
   const firstPoint = allPoints[0] ?? { lat: 4.576863, lng: -75.646213 }
   const bounds = L.latLngBounds([
