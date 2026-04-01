@@ -103,15 +103,28 @@ export function LocationMap({
   }, [])
 
   const educationMarkerIcons = useMemo(() => {
-    const buildIcon = (isActive: boolean) =>
+    const buildIcon = (color: string, isActive: boolean) =>
       L.divIcon({
         className: "property-map-education-marker",
         html: `
           <div class="property-map-education-marker-shell${
             isActive ? " property-map-education-marker-shell-active" : ""
-          }">
-            <span class="property-map-education-marker-roof"></span>
-            <span class="property-map-education-marker-base"></span>
+          }" style="color: ${color}">
+            <svg
+              class="property-map-education-marker-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M21.42 10.922a1 1 0 0 0 0-1.844l-8-4a1 1 0 0 0-.894 0l-8 4a1 1 0 0 0 0 1.844l8 4a1 1 0 0 0 .894 0z"></path>
+              <path d="M22 10v6"></path>
+              <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"></path>
+            </svg>
           </div>
         `,
         iconSize: [32, 32],
@@ -119,8 +132,8 @@ export function LocationMap({
       })
 
     return {
-      default: buildIcon(false),
-      active: buildIcon(true),
+      getDefault: (color: string) => buildIcon(color, false),
+      getActive: (color: string) => buildIcon(color, true),
     }
   }, [])
 
@@ -208,7 +221,11 @@ export function LocationMap({
             <Marker
               key={educationPoint.id}
               position={[educationPoint.location.lat, educationPoint.location.lng]}
-              icon={isActive ? educationMarkerIcons.active : educationMarkerIcons.default}
+              icon={
+                isActive
+                  ? educationMarkerIcons.getActive(educationPoint.color)
+                  : educationMarkerIcons.getDefault(educationPoint.color)
+              }
             >
               {isActive ? (
                 <Tooltip direction="top" offset={[0, -16]} className="property-map-education-label">
@@ -249,6 +266,17 @@ function MapViewportSync({
       const bounds = L.latLngBounds(
         selectedRoad.path.map((point) => [point.lat, point.lng] as [number, number])
       )
+      const center = bounds.getCenter()
+      const latSpan = Math.abs(bounds.getNorth() - bounds.getSouth())
+      const lngSpan = Math.abs(bounds.getEast() - bounds.getWest())
+
+      if (Math.max(latSpan, lngSpan) < 0.00045) {
+        map.flyTo([center.lat, center.lng], 18, {
+          animate: true,
+          duration: 0.85,
+        })
+        return
+      }
 
       map.fitBounds(bounds, {
         padding: [56, 56],

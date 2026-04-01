@@ -548,8 +548,8 @@ export const premiumContent: ProjectContent = {
       targetFrame: frameFromSequenceName("360°.0055"),
       marker: {
         frame: frameFromSequenceName("360°.0055"),
-        x: 0.623,
-        y: 0.761,
+        x: 0.63,
+        y: 0.71,
       },
       media: {
         src: "/ZONA%20DE%20JUEGOS.webp",
@@ -616,8 +616,8 @@ export const premiumContent: ProjectContent = {
       targetFrame: frameFromSequenceName("360°.0038"),
       marker: {
         frame: frameFromSequenceName("360°.0038"),
-        x: 0.502,
-        y: 0.79,
+        x: 0.49,
+        y: 0.785,
       },
       media: {
         src: "/Parque%20ni%C3%B1os.webp",
