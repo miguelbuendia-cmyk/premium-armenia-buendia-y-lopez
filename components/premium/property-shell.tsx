@@ -94,6 +94,16 @@ const amenityIcons = {
   gym: Dumbbell,
 } as const
 
+const amenityMediaDimensions = {
+  "/Galeria/piscina.webp": { width: 5760, height: 3654 },
+  "/Jardines.webp": { width: 5760, height: 3654 },
+  "/GYM.webp": { width: 3500, height: 2190 },
+  "/ZONA%20DE%20JUEGOS.webp": { width: 3500, height: 2190 },
+  "/COWORKING.webp": { width: 3500, height: 2190 },
+  "/Turco.webp": { width: 2230, height: 990 },
+  "/Parque%20ni%C3%B1os.webp": { width: 2680, height: 2065 },
+} as const
+
 const gallerySectionMeta = {
   exteriores: {
     badge: "Visuales urbanas",
@@ -1139,19 +1149,20 @@ function AmenityMediaPanel({
 }) {
   const Icon =
     amenityIcons[amenity.id as keyof typeof amenityIcons] ?? GlassWater
+  const mediaDimensions = amenity.media.src
+    ? amenityMediaDimensions[
+        amenity.media.src as keyof typeof amenityMediaDimensions
+      ]
+    : null
+  const mediaAspectRatio = mediaDimensions
+    ? `${mediaDimensions.width} / ${mediaDimensions.height}`
+    : undefined
 
   return (
-    <Card className="property-amenity-detail-panel">
-      <CardHeader className="property-dock-panel-header">
-        <div>
-          <p className="property-panel-kicker">{amenity.shortLabel}</p>
-          <CardTitle className="property-panel-title">{amenity.name}</CardTitle>
-          <CardDescription className="property-panel-description">
-            {amenity.highlight}
-          </CardDescription>
-        </div>
-      </CardHeader>
-
+    <Card
+      className="property-amenity-detail-panel"
+      style={mediaAspectRatio ? { aspectRatio: mediaAspectRatio } : undefined}
+    >
       <CardContent className="property-amenity-detail-body">
         <div className="property-amenity-media-shell">
           {amenity.media.src ? (
@@ -1177,19 +1188,8 @@ function AmenityMediaPanel({
               <span className="property-amenity-media-icon">
                 <Icon />
               </span>
-              <span className="property-amenity-media-label">
-                {amenity.media.placeholderLabel}
-              </span>
-              <p>{amenity.media.placeholderNote}</p>
             </div>
           )}
-        </div>
-
-        <div className="property-amenity-detail-copy">
-          <p>{amenity.description}</p>
-          {amenity.statusNote ? (
-            <p className="property-footnote">{amenity.statusNote}</p>
-          ) : null}
         </div>
       </CardContent>
     </Card>

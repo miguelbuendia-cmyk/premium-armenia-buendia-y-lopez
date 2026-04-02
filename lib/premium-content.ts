@@ -186,12 +186,32 @@ export type ProjectContent = {
 }
 
 const LEGACY_MAIN_TOTAL_FRAMES = 75
-const NEXT_MAIN_TOTAL_FRAMES = 110
+const PREVIOUS_MAIN_TOTAL_FRAMES = 110
+const NEXT_MAIN_TOTAL_FRAMES = 190
+
+function scaleFrame(
+  frame: number,
+  fromTotalFrames: number,
+  toTotalFrames: number
+) {
+  return Math.round(
+    (frame * (toTotalFrames - 1)) / Math.max(1, fromTotalFrames - 1)
+  )
+}
 
 function scaleMainFrame(frame: number) {
-  return Math.round(
-    (frame * (NEXT_MAIN_TOTAL_FRAMES - 1)) / (LEGACY_MAIN_TOTAL_FRAMES - 1)
-  )
+  return scaleFrame(frame, LEGACY_MAIN_TOTAL_FRAMES, NEXT_MAIN_TOTAL_FRAMES)
+}
+
+function scalePreviousMainFrame(frame: number) {
+  return scaleFrame(frame, PREVIOUS_MAIN_TOTAL_FRAMES, NEXT_MAIN_TOTAL_FRAMES)
+}
+
+function scaleVisibleFrameRange(range: { start: number; end: number }) {
+  return {
+    start: scalePreviousMainFrame(range.start),
+    end: scalePreviousMainFrame(range.end),
+  }
 }
 
 function frameFromSequenceName(fileName: string) {
@@ -291,7 +311,7 @@ export const premiumContent: ProjectContent = {
   },
   stats: [
     { label: "Estado", value: "Lanzamiento editorial" },
-    { label: "Recorrido", value: "110 frames con drag" },
+    { label: "Recorrido", value: "190 frames con drag" },
     { label: "Vista", value: "Hero a pantalla completa" },
   ],
   locationPoints: [
@@ -407,7 +427,7 @@ export const premiumContent: ProjectContent = {
       {
         id: "universidad-antonio-narino",
         category: "university",
-        name: "Universidad Antonio Nariño",
+        name: "Universidad Antonio Nari\u00F1o",
         distanceLabel: "290m",
         color: "#7a5ce0",
         location: {
@@ -449,10 +469,10 @@ export const premiumContent: ProjectContent = {
       targetFrame: scaleMainFrame(18),
       linkedResidenceId: "torre-a",
       positions: torreAPositions,
-      visibleFrameRange: {
+      visibleFrameRange: scaleVisibleFrameRange({
         start: 103,
         end: 13,
-      },
+      }),
     },
     {
       id: "torre-c",
@@ -463,10 +483,10 @@ export const premiumContent: ProjectContent = {
       targetFrame: scaleMainFrame(25),
       linkedResidenceId: "torre-c",
       positions: torreCPositions,
-      visibleFrameRange: {
+      visibleFrameRange: scaleVisibleFrameRange({
         start: 103,
         end: 13,
-      },
+      }),
     },
   ],
   amenities: [
@@ -478,9 +498,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Presenta una amenidad de uso mixto que ayuda a vender bienestar, reunion familiar y tiempo libre dentro del proyecto.",
       statusNote: "Render listo para presentar la zona humeda dentro del recorrido principal.",
-      targetFrame: frameFromSequenceName("360°.0047"),
+      targetFrame: scalePreviousMainFrame(
+        frameFromSequenceName("360\u00B0.0047")
+      ),
       marker: {
-        frame: frameFromSequenceName("360°.0047"),
+        frame: scalePreviousMainFrame(frameFromSequenceName("360\u00B0.0047")),
         x: 0.534,
         y: 0.796,
       },
@@ -501,9 +523,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Los jardines amplifican la sensacion de calma y conectan visualmente el proyecto con el entorno natural.",
       statusNote: "Pendiente integrar renders con vegetacion definitiva.",
-      targetFrame: frameFromSequenceName("360°.0075"),
+      targetFrame: scalePreviousMainFrame(
+        frameFromSequenceName("360\u00B0.0075")
+      ),
       marker: {
-        frame: frameFromSequenceName("360°.0075"),
+        frame: scalePreviousMainFrame(frameFromSequenceName("360\u00B0.0075")),
         x: 0.537,
         y: 0.68,
       },
@@ -523,9 +547,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Un espacio disenado para el bienestar, la energia y la constancia.",
       statusNote: "",
-      targetFrame: frameFromSequenceName("360°.0052"),
+      targetFrame: scalePreviousMainFrame(
+        frameFromSequenceName("360\u00B0.0052")
+      ),
       marker: {
-        frame: frameFromSequenceName("360°.0052"),
+        frame: scalePreviousMainFrame(frameFromSequenceName("360\u00B0.0052")),
         x: 0.659,
         y: 0.749,
       },
@@ -545,9 +571,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Zona de juegos con ping pong, futbolito y billar para compartir y disfrutar.",
       statusNote: "",
-      targetFrame: frameFromSequenceName("360°.0055"),
+      targetFrame: scalePreviousMainFrame(
+        frameFromSequenceName("360\u00B0.0055")
+      ),
       marker: {
-        frame: frameFromSequenceName("360°.0055"),
+        frame: scalePreviousMainFrame(frameFromSequenceName("360\u00B0.0055")),
         x: 0.63,
         y: 0.71,
       },
@@ -568,9 +596,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Trabaja sin desplazarte en un ambiente comodo y profesional.",
       statusNote: "",
-      targetFrame: frameFromSequenceName("360°.0059"),
+      targetFrame: scalePreviousMainFrame(
+        frameFromSequenceName("360\u00B0.0059")
+      ),
       marker: {
-        frame: frameFromSequenceName("360°.0059"),
+        frame: scalePreviousMainFrame(frameFromSequenceName("360\u00B0.0059")),
         x: 0.615,
         y: 0.694,
       },
@@ -590,9 +620,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Ayuda a comunicar un proyecto pensado para familias, uso cotidiano y estancia prolongada.",
       statusNote: "Pendiente sumar escena de uso y paisajismo final.",
-      targetFrame: frameFromSequenceName("360°.0042"),
+      targetFrame: scalePreviousMainFrame(
+        frameFromSequenceName("360\u00B0.0042")
+      ),
       marker: {
-        frame: frameFromSequenceName("360°.0042"),
+        frame: scalePreviousMainFrame(frameFromSequenceName("360\u00B0.0042")),
         x: 0.452,
         y: 0.705,
       },
@@ -613,9 +645,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Se integra como argumento premium para reforzar la experiencia de descanso y el valor percibido del conjunto.",
       statusNote: "Rotacion focal sin tarjeta de render en esta etapa.",
-      targetFrame: frameFromSequenceName("360°.0038"),
+      targetFrame: scalePreviousMainFrame(
+        frameFromSequenceName("360\u00B0.0038")
+      ),
       marker: {
-        frame: frameFromSequenceName("360°.0038"),
+        frame: scalePreviousMainFrame(frameFromSequenceName("360\u00B0.0038")),
         x: 0.49,
         y: 0.785,
       },
@@ -675,7 +709,7 @@ export const premiumContent: ProjectContent = {
       title: "Cocina",
       phase: "Interior",
       description:
-        "Visual de cocina para apoyar la lectura de acabados, funcionalidad y diseño.",
+        "Visual de cocina para apoyar la lectura de acabados, funcionalidad y dise\u00F1o.",
       note: "Ideal para fichas comerciales y carruseles de interiores.",
       image: {
         src: "/Galeria/cocina frente 3.webp",
@@ -719,15 +753,15 @@ export const premiumContent: ProjectContent = {
     schedule: "Atencion de lunes a sabado, previa cita.",
   },
   mainViewer: {
-    totalFrames: 110,
-    framesDir: "/2WEB",
-    filePrefix: "360°.",
+    totalFrames: 190,
+    framesDir: "/2579WPG",
+    filePrefix: "360\u00B0.",
     fileSuffix: "_resultado.webp",
     padLength: 4,
     defaultFrame: 0,
     frameScale: 1,
-    sourceInsetLeft: 0,
-    sourceInsetRight: 0,
+    sourceInsetLeft: 0.123,
+    sourceInsetRight: 0.123,
     dragSensitivity: 0.45,
     autoplayTurns: 0.18,
     autoplayMinReadyFrames: 20,
