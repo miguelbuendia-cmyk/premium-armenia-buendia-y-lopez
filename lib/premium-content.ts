@@ -498,13 +498,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Presenta una amenidad de uso mixto que ayuda a vender bienestar, reunion familiar y tiempo libre dentro del proyecto.",
       statusNote: "Render listo para presentar la zona humeda dentro del recorrido principal.",
-      targetFrame: scalePreviousMainFrame(
-        frameFromSequenceName("360\u00B0.0047")
-      ),
+      targetFrame: frameFromSequenceName("360\u00B0.0107"),
       marker: {
-        frame: scalePreviousMainFrame(frameFromSequenceName("360\u00B0.0047")),
-        x: 0.534,
-        y: 0.796,
+        frame: frameFromSequenceName("360\u00B0.0107"),
+        x: 0.75,
+        y: 0.823,
       },
       media: {
         src: "/Galeria/piscina.webp",
@@ -523,13 +521,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Los jardines amplifican la sensacion de calma y conectan visualmente el proyecto con el entorno natural.",
       statusNote: "Pendiente integrar renders con vegetacion definitiva.",
-      targetFrame: scalePreviousMainFrame(
-        frameFromSequenceName("360\u00B0.0075")
-      ),
+      targetFrame: frameFromSequenceName("360\u00B0.0135"),
       marker: {
-        frame: scalePreviousMainFrame(frameFromSequenceName("360\u00B0.0075")),
-        x: 0.537,
-        y: 0.68,
+        frame: frameFromSequenceName("360\u00B0.0135"),
+        x: 0.62,
+        y: 0.778,
       },
       media: {
         src: "/Jardines.webp",
@@ -547,13 +543,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Un espacio disenado para el bienestar, la energia y la constancia.",
       statusNote: "",
-      targetFrame: scalePreviousMainFrame(
-        frameFromSequenceName("360\u00B0.0052")
-      ),
+      targetFrame: frameFromSequenceName("360\u00B0.0105"),
       marker: {
-        frame: scalePreviousMainFrame(frameFromSequenceName("360\u00B0.0052")),
-        x: 0.659,
-        y: 0.749,
+        frame: frameFromSequenceName("360\u00B0.0105"),
+        x: 0.756,
+        y: 0.771,
       },
       media: {
         src: "/GYM.webp",
@@ -571,13 +565,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Zona de juegos con ping pong, futbolito y billar para compartir y disfrutar.",
       statusNote: "",
-      targetFrame: scalePreviousMainFrame(
-        frameFromSequenceName("360\u00B0.0055")
-      ),
+      targetFrame: frameFromSequenceName("360\u00B0.0096"),
       marker: {
-        frame: scalePreviousMainFrame(frameFromSequenceName("360\u00B0.0055")),
-        x: 0.63,
-        y: 0.71,
+        frame: frameFromSequenceName("360\u00B0.0096"),
+        x: 0.681,
+        y: 0.807,
       },
       media: {
         src: "/ZONA%20DE%20JUEGOS.webp",
@@ -596,13 +588,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Trabaja sin desplazarte en un ambiente comodo y profesional.",
       statusNote: "",
-      targetFrame: scalePreviousMainFrame(
-        frameFromSequenceName("360\u00B0.0059")
-      ),
+      targetFrame: frameFromSequenceName("360\u00B0.0107"),
       marker: {
-        frame: scalePreviousMainFrame(frameFromSequenceName("360\u00B0.0059")),
-        x: 0.615,
-        y: 0.694,
+        frame: frameFromSequenceName("360\u00B0.0107"),
+        x: 0.687,
+        y: 0.775,
       },
       media: {
         src: "/COWORKING.webp",
@@ -620,13 +610,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Ayuda a comunicar un proyecto pensado para familias, uso cotidiano y estancia prolongada.",
       statusNote: "Pendiente sumar escena de uso y paisajismo final.",
-      targetFrame: scalePreviousMainFrame(
-        frameFromSequenceName("360\u00B0.0042")
-      ),
+      targetFrame: frameFromSequenceName("360\u00B0.0064"),
       marker: {
-        frame: scalePreviousMainFrame(frameFromSequenceName("360\u00B0.0042")),
-        x: 0.452,
-        y: 0.705,
+        frame: frameFromSequenceName("360\u00B0.0064"),
+        x: 0.447,
+        y: 0.788,
       },
       media: {
         src: "/Turco.webp",
@@ -645,13 +633,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Se integra como argumento premium para reforzar la experiencia de descanso y el valor percibido del conjunto.",
       statusNote: "Rotacion focal sin tarjeta de render en esta etapa.",
-      targetFrame: scalePreviousMainFrame(
-        frameFromSequenceName("360\u00B0.0038")
-      ),
+      targetFrame: frameFromSequenceName("360\u00B0.0108"),
       marker: {
-        frame: scalePreviousMainFrame(frameFromSequenceName("360\u00B0.0038")),
-        x: 0.49,
-        y: 0.785,
+        frame: frameFromSequenceName("360\u00B0.0108"),
+        x: 0.713,
+        y: 0.725,
       },
       media: {
         src: "/Parque%20ni%C3%B1os.webp",
