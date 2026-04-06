@@ -61,7 +61,7 @@ export function HomeIntroGate({
       return
     }
 
-    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
       setIsVideoReady(true)
     }
   }, [])
@@ -130,10 +130,16 @@ export function HomeIntroGate({
           className="home-intro-video"
           muted
           playsInline
-          preload="metadata"
+          preload="auto"
           onEnded={completeIntro}
           onError={failOpen}
+          onLoadedMetadata={() => {
+            setIsVideoReady(true)
+          }}
           onLoadedData={() => {
+            setIsVideoReady(true)
+          }}
+          onCanPlay={() => {
             setIsVideoReady(true)
           }}
         >
