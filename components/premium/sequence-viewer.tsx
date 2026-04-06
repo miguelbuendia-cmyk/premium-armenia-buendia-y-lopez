@@ -15,14 +15,23 @@ type SequenceViewerProps = {
   config: ViewerSequenceConfig
   focusFrame?: number | null
   onFrameChange?: (frame: number) => void
+  onLoadingStateChange?: (state: {
+    completedCount: number
+    hasInitialFrame: boolean
+    isReady: boolean
+    loadingPct: number
+  }) => void
   onViewportGeometryChange?: (geometry: SequenceViewportGeometry | null) => void
+  suppressLoadingOverlay?: boolean
 }
 
 export function SequenceViewer({
   config,
   focusFrame = null,
   onFrameChange,
+  onLoadingStateChange,
   onViewportGeometryChange,
+  suppressLoadingOverlay = false,
 }: SequenceViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const imagesRef = useRef<(HTMLImageElement | null)[]>(
@@ -53,6 +62,10 @@ export function SequenceViewer({
   const [showHint, setShowHint] = useState(true)
   const [isIntroReady, setIsIntroReady] = useState(false)
   const [shouldSkipIntro, setShouldSkipIntro] = useState(false)
+
+  const isViewerReady =
+    hasInitialFrame ||
+    (completedCount === config.totalFrames && loadedCountRef.current > 0)
 
   const configSignature = useMemo(() => {
     return [
@@ -483,6 +496,11 @@ export function SequenceViewer({
             loadedFramesRef.current.add(normalizedIndex)
             bumpCompletedCount()
 
+            if (loadedCountRef.current === 1) {
+              setHasInitialFrame(true)
+              commitFramePosition(virtualFrameRef.current)
+            }
+
             if (introFrameSet.has(normalizedIndex)) {
               introReadyCountRef.current += 1
 
@@ -595,6 +613,19 @@ export function SequenceViewer({
   ])
 
   useEffect(() => {
+    if (hasInitialFrame) {
+      return
+    }
+
+    if (completedCount !== config.totalFrames || loadedCountRef.current === 0) {
+      return
+    }
+
+    setHasInitialFrame(true)
+    commitFramePosition(virtualFrameRef.current)
+  }, [commitFramePosition, completedCount, config.totalFrames, hasInitialFrame])
+
+  useEffect(() => {
     const onResize = () => {
       commitFramePosition(virtualFrameRef.current)
     }
@@ -693,6 +724,21 @@ export function SequenceViewer({
   useEffect(() => {
     onFrameChange?.(displayFrame)
   }, [displayFrame, onFrameChange])
+
+  useEffect(() => {
+    onLoadingStateChange?.({
+      completedCount,
+      hasInitialFrame,
+      isReady: isViewerReady,
+      loadingPct,
+    })
+  }, [
+    completedCount,
+    hasInitialFrame,
+    isViewerReady,
+    loadingPct,
+    onLoadingStateChange,
+  ])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -800,7 +846,7 @@ export function SequenceViewer({
         onTouchCancel={handlePointerUp}
       />
 
-      {!hasInitialFrame ? (
+      {!suppressLoadingOverlay && !isViewerReady ? (
         <div className="viewer-loading-shell">
           <div className="viewer-loading-card">
             <p className="viewer-loading-label">Cargando secuencia</p>

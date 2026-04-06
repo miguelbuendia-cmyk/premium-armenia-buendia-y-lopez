@@ -1,4 +1,4 @@
-import { PropertyShell } from "@/components/premium/property-shell"
+import { HomeIntroGate } from "@/components/premium/home-intro-gate"
 import { getFacadeSections, getGallerySections } from "@/lib/gallery-sections"
 import { premiumContent } from "@/lib/premium-content"
 
@@ -9,7 +9,7 @@ export default async function Home() {
   ])
 
   return (
-    <PropertyShell
+    <HomeIntroGate
       content={premiumContent}
       gallerySections={gallerySections}
       facadeSections={facadeSections}

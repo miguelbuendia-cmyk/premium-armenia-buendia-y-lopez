@@ -766,7 +766,7 @@ export const premiumContent: ProjectContent = {
     sourceInsetLeft: MAIN_SOURCE_INSET_LEFT,
     sourceInsetRight: MAIN_SOURCE_INSET_RIGHT,
     dragSensitivity: 0.45,
-    autoplayTurns: 0.18,
+    autoplayTurns: 0,
     autoplayMinReadyFrames: 20,
     preloadBatchSize: 8,
     preloadTickMs: 45,

@@ -83,6 +83,13 @@ type PropertyShellProps = {
   content: ProjectContent
   facadeSections: FacadeSections
   gallerySections: GallerySections
+  onViewerLoadingStateChange?: (state: {
+    completedCount: number
+    hasInitialFrame: boolean
+    isReady: boolean
+    loadingPct: number
+  }) => void
+  suppressViewerLoadingOverlay?: boolean
 }
 
 const dockSections: DockSection[] = [
@@ -194,6 +201,8 @@ export function PropertyShell({
   content,
   facadeSections,
   gallerySections,
+  onViewerLoadingStateChange,
+  suppressViewerLoadingOverlay = false,
 }: PropertyShellProps) {
   const [activeSection, setActiveSection] = useState<PanelSection | null>(null)
   const [currentFrame, setCurrentFrame] = useState(content.mainViewer.defaultFrame)
@@ -457,7 +466,9 @@ export function PropertyShell({
             config={content.mainViewer}
             focusFrame={focusFrame}
             onFrameChange={setCurrentFrame}
+            onLoadingStateChange={onViewerLoadingStateChange}
             onViewportGeometryChange={setViewerGeometry}
+            suppressLoadingOverlay={suppressViewerLoadingOverlay}
           />
         </div>
 
