@@ -2,6 +2,7 @@ export type DockSection =
   | "overview"
   | "location"
   | "amenities"
+  | "facades"
   | "residences"
   | "gallery"
 
@@ -52,6 +53,10 @@ export type GalleryCard = {
 export type GallerySectionKey = "exteriores" | "interiores" | "apartamentos"
 
 export type GallerySections = Record<GallerySectionKey, GalleryCard[]>
+
+export type FacadeSectionKey = "dia" | "noche"
+
+export type FacadeSections = Record<FacadeSectionKey, GalleryCard[]>
 
 export type ContactInfo = {
   projectName: string
@@ -188,6 +193,8 @@ export type ProjectContent = {
 const LEGACY_MAIN_TOTAL_FRAMES = 75
 const PREVIOUS_MAIN_TOTAL_FRAMES = 110
 const NEXT_MAIN_TOTAL_FRAMES = 190
+const MAIN_SOURCE_INSET_LEFT = 0.123
+const MAIN_SOURCE_INSET_RIGHT = 0.123
 
 function scaleFrame(
   frame: number,
@@ -205,6 +212,12 @@ function scaleMainFrame(frame: number) {
 
 function scalePreviousMainFrame(frame: number) {
   return scaleFrame(frame, PREVIOUS_MAIN_TOTAL_FRAMES, NEXT_MAIN_TOTAL_FRAMES)
+}
+
+function normalizeMainOverlayX(x: number) {
+  const usableWidth = 1 - MAIN_SOURCE_INSET_LEFT - MAIN_SOURCE_INSET_RIGHT
+  const normalized = (x - MAIN_SOURCE_INSET_LEFT) / usableWidth
+  return Number(Math.max(0, Math.min(1, normalized)).toFixed(6))
 }
 
 function scaleVisibleFrameRange(range: { start: number; end: number }) {
@@ -231,38 +244,38 @@ function scaleHotspotPositions(positions: HotspotPosition[]): HotspotPosition[] 
 }
 
 const torreAPositions: HotspotPosition[] = scaleHotspotPositions([
-  { frame: 0, x: 0.43, y: 0.39 },
-  { frame: 4, x: 0.45, y: 0.385 },
-  { frame: 8, x: 0.47, y: 0.38 },
-  { frame: 12, x: 0.485, y: 0.38 },
-  { frame: 16, x: 0.49, y: 0.382 },
-  { frame: 20, x: 0.48, y: 0.388 },
-  { frame: 24, x: 0.465, y: 0.395 },
-  { frame: 28, x: 0.44, y: 0.402 },
-  { frame: 32, x: 0.405, y: 0.412 },
-  { frame: 36, x: 0.37, y: 0.425 },
-  { frame: 40, x: 0.34, y: 0.44 },
-  { frame: 44, x: 0.315, y: 0.455 },
-  { frame: 48, x: 0.295, y: 0.47 },
-  { frame: 52, x: 0.29, y: 0.485 },
-  { frame: 56, x: 0.3, y: 0.495 },
-  { frame: 60, x: 0.325, y: 0.495 },
-  { frame: 64, x: 0.355, y: 0.485 },
-  { frame: 68, x: 0.39, y: 0.465 },
-  { frame: 72, x: 0.415, y: 0.44 },
+  { frame: 0, x: normalizeMainOverlayX(0.43), y: 0.39 },
+  { frame: 4, x: normalizeMainOverlayX(0.45), y: 0.385 },
+  { frame: 8, x: normalizeMainOverlayX(0.47), y: 0.38 },
+  { frame: 12, x: normalizeMainOverlayX(0.485), y: 0.38 },
+  { frame: 16, x: normalizeMainOverlayX(0.49), y: 0.382 },
+  { frame: 20, x: normalizeMainOverlayX(0.48), y: 0.388 },
+  { frame: 24, x: normalizeMainOverlayX(0.465), y: 0.395 },
+  { frame: 28, x: normalizeMainOverlayX(0.44), y: 0.402 },
+  { frame: 32, x: normalizeMainOverlayX(0.405), y: 0.412 },
+  { frame: 36, x: normalizeMainOverlayX(0.37), y: 0.425 },
+  { frame: 40, x: normalizeMainOverlayX(0.34), y: 0.44 },
+  { frame: 44, x: normalizeMainOverlayX(0.315), y: 0.455 },
+  { frame: 48, x: normalizeMainOverlayX(0.295), y: 0.47 },
+  { frame: 52, x: normalizeMainOverlayX(0.29), y: 0.485 },
+  { frame: 56, x: normalizeMainOverlayX(0.3), y: 0.495 },
+  { frame: 60, x: normalizeMainOverlayX(0.325), y: 0.495 },
+  { frame: 64, x: normalizeMainOverlayX(0.355), y: 0.485 },
+  { frame: 68, x: normalizeMainOverlayX(0.39), y: 0.465 },
+  { frame: 72, x: normalizeMainOverlayX(0.415), y: 0.44 },
 ])
 
 const torreCPositions: HotspotPosition[] = scaleHotspotPositions([
-  { frame: 0, x: 0.63, y: 0.52 },
-  { frame: 8, x: 0.65, y: 0.51 },
-  { frame: 16, x: 0.63, y: 0.51 },
-  { frame: 24, x: 0.58, y: 0.5 },
-  { frame: 32, x: 0.51, y: 0.5 },
-  { frame: 40, x: 0.46, y: 0.51 },
-  { frame: 48, x: 0.43, y: 0.53 },
-  { frame: 56, x: 0.45, y: 0.56 },
-  { frame: 64, x: 0.53, y: 0.56 },
-  { frame: 72, x: 0.6, y: 0.54 },
+  { frame: 0, x: normalizeMainOverlayX(0.63), y: 0.52 },
+  { frame: 8, x: normalizeMainOverlayX(0.65), y: 0.51 },
+  { frame: 16, x: normalizeMainOverlayX(0.63), y: 0.51 },
+  { frame: 24, x: normalizeMainOverlayX(0.58), y: 0.5 },
+  { frame: 32, x: normalizeMainOverlayX(0.51), y: 0.5 },
+  { frame: 40, x: normalizeMainOverlayX(0.46), y: 0.51 },
+  { frame: 48, x: normalizeMainOverlayX(0.43), y: 0.53 },
+  { frame: 56, x: normalizeMainOverlayX(0.45), y: 0.56 },
+  { frame: 64, x: normalizeMainOverlayX(0.53), y: 0.56 },
+  { frame: 72, x: normalizeMainOverlayX(0.6), y: 0.54 },
 ])
 
 export const premiumContent: ProjectContent = {
@@ -284,6 +297,7 @@ export const premiumContent: ProjectContent = {
     overview: "Inicio",
     location: "Ubicacion",
     amenities: "Amenidades",
+    facades: "Fachadas",
     residences: "Inmuebles",
     gallery: "Galeria",
   },
@@ -291,6 +305,7 @@ export const premiumContent: ProjectContent = {
     overview: "Vista general",
     location: "Ubicacion",
     amenities: "Amenidades del proyecto",
+    facades: "Fachadas del proyecto",
     residences: "Inventario destacado",
     gallery: "Galeria comercial",
     contact: "Contacto comercial",
@@ -302,6 +317,8 @@ export const premiumContent: ProjectContent = {
       "Un modo cartografico para ubicar el proyecto en Armenia, destacar la implantacion y leer las vias de acceso cercanas.",
     amenities:
       "Cada amenidad puede enfocar la secuencia para guiar la presentacion sin cambiar de pantalla.",
+    facades:
+      "Un acceso directo a las carpetas de fachada dia y noche para revisar imagenes comerciales mas rapido.",
     residences:
       "Tipologias y torres preparadas para recibir inventario comercial, brochure o material de cierre.",
     gallery:
@@ -501,8 +518,8 @@ export const premiumContent: ProjectContent = {
       targetFrame: frameFromSequenceName("360\u00B0.0107"),
       marker: {
         frame: frameFromSequenceName("360\u00B0.0107"),
-        x: 0.75,
-        y: 0.823,
+        x: normalizeMainOverlayX(0.7),
+        y: 0.779,
       },
       media: {
         src: "/Galeria/piscina.webp",
@@ -524,8 +541,8 @@ export const premiumContent: ProjectContent = {
       targetFrame: frameFromSequenceName("360\u00B0.0135"),
       marker: {
         frame: frameFromSequenceName("360\u00B0.0135"),
-        x: 0.62,
-        y: 0.778,
+        x: normalizeMainOverlayX(0.6),
+        y: 0.74,
       },
       media: {
         src: "/Jardines.webp",
@@ -546,8 +563,8 @@ export const premiumContent: ProjectContent = {
       targetFrame: frameFromSequenceName("360\u00B0.0105"),
       marker: {
         frame: frameFromSequenceName("360\u00B0.0105"),
-        x: 0.756,
-        y: 0.771,
+        x: normalizeMainOverlayX(0.7),
+        y: 0.725,
       },
       media: {
         src: "/GYM.webp",
@@ -568,8 +585,8 @@ export const premiumContent: ProjectContent = {
       targetFrame: frameFromSequenceName("360\u00B0.0096"),
       marker: {
         frame: frameFromSequenceName("360\u00B0.0096"),
-        x: 0.681,
-        y: 0.807,
+        x: normalizeMainOverlayX(0.637),
+        y: 0.76,
       },
       media: {
         src: "/ZONA%20DE%20JUEGOS.webp",
@@ -591,8 +608,8 @@ export const premiumContent: ProjectContent = {
       targetFrame: frameFromSequenceName("360\u00B0.0107"),
       marker: {
         frame: frameFromSequenceName("360\u00B0.0107"),
-        x: 0.687,
-        y: 0.775,
+        x: normalizeMainOverlayX(0.639),
+        y: 0.735,
       },
       media: {
         src: "/COWORKING.webp",
@@ -613,8 +630,8 @@ export const premiumContent: ProjectContent = {
       targetFrame: frameFromSequenceName("360\u00B0.0064"),
       marker: {
         frame: frameFromSequenceName("360\u00B0.0064"),
-        x: 0.447,
-        y: 0.788,
+        x: normalizeMainOverlayX(0.46),
+        y: 0.75,
       },
       media: {
         src: "/Turco.webp",
@@ -636,8 +653,8 @@ export const premiumContent: ProjectContent = {
       targetFrame: frameFromSequenceName("360\u00B0.0108"),
       marker: {
         frame: frameFromSequenceName("360\u00B0.0108"),
-        x: 0.713,
-        y: 0.725,
+        x: normalizeMainOverlayX(0.655),
+        y: 0.694,
       },
       media: {
         src: "/Parque%20ni%C3%B1os.webp",
@@ -746,8 +763,8 @@ export const premiumContent: ProjectContent = {
     padLength: 4,
     defaultFrame: 0,
     frameScale: 1,
-    sourceInsetLeft: 0.123,
-    sourceInsetRight: 0.123,
+    sourceInsetLeft: MAIN_SOURCE_INSET_LEFT,
+    sourceInsetRight: MAIN_SOURCE_INSET_RIGHT,
     dragSensitivity: 0.45,
     autoplayTurns: 0.18,
     autoplayMinReadyFrames: 20,

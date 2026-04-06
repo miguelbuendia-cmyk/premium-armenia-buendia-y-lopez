@@ -2,11 +2,21 @@
 
 import dynamic from "next/dynamic"
 import Image from "next/image"
-import { startTransition, type ReactNode, useMemo, useState } from "react"
+import {
+  createElement,
+  startTransition,
+  type ReactNode,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useState,
+} from "react"
 import {
   ArrowLeft,
   Building2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   CircleX,
   Dumbbell,
   Ellipsis,
@@ -44,6 +54,8 @@ import { cn } from "@/lib/utils"
 import type {
   Amenity,
   DockSection,
+  FacadeSectionKey,
+  FacadeSections,
   GalleryCard,
   GallerySectionKey,
   GallerySections,
@@ -57,7 +69,10 @@ import type {
   ResidenceCard,
 } from "@/lib/premium-content"
 
-import { SequenceViewer } from "./sequence-viewer"
+import {
+  SequenceViewer,
+  type SequenceViewportGeometry,
+} from "./sequence-viewer"
 
 const LocationMap = dynamic(
   () => import("./location-map").then((module) => module.LocationMap),
@@ -66,6 +81,7 @@ const LocationMap = dynamic(
 
 type PropertyShellProps = {
   content: ProjectContent
+  facadeSections: FacadeSections
   gallerySections: GallerySections
 }
 
@@ -74,12 +90,14 @@ const dockSections: DockSection[] = [
   "location",
   "amenities",
   "gallery",
+  "facades",
 ]
 
 const dockIcons = {
   overview: Sparkles,
   location: MapPinned,
   amenities: Trees,
+  facades: Landmark,
   residences: Building2,
   gallery: Images,
 } satisfies Record<DockSection, typeof Sparkles>
@@ -134,9 +152,49 @@ const galleryFolderOrder: GallerySectionKey[] = [
   "apartamentos",
 ]
 
+const facadeSectionMeta = {
+  dia: {
+    badge: "Fachadas dia",
+    coverImageSrc: "/Galeria.2/dia.2.webp",
+    description: "Imagenes de fachada con luz natural para lectura comercial y urbana.",
+    empty: "Aun no hay imagenes en la carpeta DIA.",
+    minimalHeader: true,
+    title: "DIA",
+  },
+  noche: {
+    badge: "Fachadas noche",
+    coverImageSrc: "/Galeria.2/noche.2.webp",
+    description: "Imagenes de fachada nocturna para revisar atmosfera e iluminacion del proyecto.",
+    empty: "Aun no hay imagenes en la carpeta NOCHE.",
+    minimalHeader: true,
+    title: "NOCHE",
+  },
+} satisfies Record<
+  FacadeSectionKey,
+  {
+    badge: string
+    coverImageSrc?: string
+    description: string
+    empty: string
+    minimalHeader?: boolean
+    title: string
+  }
+>
+
+const facadeFolderOrder: FacadeSectionKey[] = ["dia", "noche"]
+
 type LocationAccordionSection = "roads" | "pois" | "education"
 
-export function PropertyShell({ content, gallerySections }: PropertyShellProps) {
+type ExpandedGalleryState = {
+  index: number
+  items: GalleryCard[]
+}
+
+export function PropertyShell({
+  content,
+  facadeSections,
+  gallerySections,
+}: PropertyShellProps) {
   const [activeSection, setActiveSection] = useState<PanelSection | null>(null)
   const [currentFrame, setCurrentFrame] = useState(content.mainViewer.defaultFrame)
   const [activeAmenityId, setActiveAmenityId] = useState<string | null>(null)
@@ -145,8 +203,11 @@ export function PropertyShell({ content, gallerySections }: PropertyShellProps) 
   )
   const [activeHotspotId, setActiveHotspotId] = useState<string | null>(null)
   const [expandedAmenityId, setExpandedAmenityId] = useState<string | null>(null)
-  const [expandedGallery, setExpandedGallery] = useState<GalleryCard | null>(null)
+  const [expandedGallery, setExpandedGallery] =
+    useState<ExpandedGalleryState | null>(null)
   const [focusFrame, setFocusFrame] = useState<number | null>(null)
+  const [viewerGeometry, setViewerGeometry] =
+    useState<SequenceViewportGeometry | null>(null)
   const [selectedRoadId, setSelectedRoadId] = useState<string | null>(null)
   const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null)
   const [selectedEducationId, setSelectedEducationId] = useState<string | null>(null)
@@ -197,13 +258,101 @@ export function PropertyShell({ content, gallerySections }: PropertyShellProps) 
     content.amenities.find((amenity) => amenity.id === activeAmenityId) ?? null
   const expandedAmenity =
     content.amenities.find((amenity) => amenity.id === expandedAmenityId) ?? null
-  const SelectedAmenityIcon =
+  const selectedAmenityIcon =
     selectedAmenity &&
     (amenityIcons[selectedAmenity.id as keyof typeof amenityIcons] ?? GlassWater)
-  const shouldShowSelectedAmenityMarker =
+  const shouldShowSelectedAmenityMarker = Boolean(
     activeSection === "amenities" &&
+    viewerGeometry &&
     selectedAmenity &&
     currentFrame === selectedAmenity.marker.frame
+  )
+  const selectedAmenityMarkerPosition =
+    viewerGeometry && selectedAmenity
+      ? {
+          left: `${
+            viewerGeometry.x + selectedAmenity.marker.x * viewerGeometry.width
+          }px`,
+          top: `${
+            viewerGeometry.y + selectedAmenity.marker.y * viewerGeometry.height
+          }px`,
+        }
+      : null
+  const expandedGalleryItem = expandedGallery?.items[expandedGallery.index] ?? null
+  const canNavigateExpandedGallery = (expandedGallery?.items.length ?? 0) > 1
+  const canGoToPreviousExpandedGallery = (expandedGallery?.index ?? 0) > 0
+  const canGoToNextExpandedGallery =
+    expandedGallery !== null &&
+    expandedGallery.index < expandedGallery.items.length - 1
+
+  const closeExpandedGallery = () => {
+    setExpandedGallery(null)
+  }
+
+  const stepExpandedGallery = (direction: -1 | 1) => {
+    startTransition(() => {
+      setExpandedGallery((currentGallery) => {
+        if (!currentGallery) {
+          return null
+        }
+
+        const nextIndex = Math.min(
+          Math.max(currentGallery.index + direction, 0),
+          currentGallery.items.length - 1
+        )
+
+        if (nextIndex === currentGallery.index) {
+          return currentGallery
+        }
+
+        return {
+          ...currentGallery,
+          index: nextIndex,
+        }
+      })
+    })
+  }
+
+  const handleExpandedGalleryKeyDown = useEffectEvent(
+    (event: KeyboardEvent) => {
+      if (!expandedGallery) {
+        return
+      }
+
+      if (event.key === "Escape") {
+        event.preventDefault()
+        closeExpandedGallery()
+        return
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault()
+        stepExpandedGallery(-1)
+        return
+      }
+
+      if (event.key === "ArrowRight") {
+        event.preventDefault()
+        stepExpandedGallery(1)
+      }
+    }
+  )
+
+  useEffect(() => {
+    if (!expandedGallery) {
+      return
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      handleExpandedGalleryKeyDown(event)
+    }
+
+    window.addEventListener("keydown", onKeyDown)
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown)
+    }
+  }, [expandedGallery])
 
   const closeAmenities = () => {
     startTransition(() => {
@@ -308,6 +457,7 @@ export function PropertyShell({ content, gallerySections }: PropertyShellProps) 
             config={content.mainViewer}
             focusFrame={focusFrame}
             onFrameChange={setCurrentFrame}
+            onViewportGeometryChange={setViewerGeometry}
           />
         </div>
 
@@ -344,7 +494,7 @@ export function PropertyShell({ content, gallerySections }: PropertyShellProps) 
           </div>
         </header>
 
-        {activeSection !== "location" ? (
+        {activeSection !== "location" && viewerGeometry ? (
           <div className="property-hotspot-layer" aria-label="Puntos destacados">
             {trackedHotspots.map(({ hotspot, position }) => (
               <button
@@ -355,8 +505,8 @@ export function PropertyShell({ content, gallerySections }: PropertyShellProps) 
                   activeHotspotId === hotspot.id && "property-hotspot-active"
                 )}
                 style={{
-                  left: `${position.x * 100}%`,
-                  top: `${position.y * 100}%`,
+                  left: `${viewerGeometry.x + position.x * viewerGeometry.width}px`,
+                  top: `${viewerGeometry.y + position.y * viewerGeometry.height}px`,
                 }}
                 onClick={() => handleHotspotFocus(hotspot.id)}
               >
@@ -367,17 +517,14 @@ export function PropertyShell({ content, gallerySections }: PropertyShellProps) 
           </div>
         ) : null}
 
-        {shouldShowSelectedAmenityMarker && selectedAmenity && SelectedAmenityIcon ? (
+        {shouldShowSelectedAmenityMarker && selectedAmenity && selectedAmenityIcon ? (
           <div className="property-amenity-marker-layer" aria-hidden="true">
             <div
               className="property-amenity-marker"
-              style={{
-                left: `${selectedAmenity.marker.x * 100}%`,
-                top: `${selectedAmenity.marker.y * 100}%`,
-              }}
+              style={selectedAmenityMarkerPosition ?? undefined}
             >
               <span className="property-amenity-marker-badge">
-                <SelectedAmenityIcon />
+                {selectedAmenityIcon ? createElement(selectedAmenityIcon) : null}
               </span>
               <span className="property-amenity-marker-dot" />
             </div>
@@ -427,34 +574,69 @@ export function PropertyShell({ content, gallerySections }: PropertyShellProps) 
           </div>
         ) : null}
 
-        {expandedGallery?.image.src ? (
+        {expandedGalleryItem?.image.src ? (
           <div
             className="property-amenity-lightbox"
             role="dialog"
             aria-modal="true"
-            aria-label={expandedGallery.image.alt}
-            onClick={() => setExpandedGallery(null)}
+            aria-label={expandedGalleryItem.image.alt}
+            onClick={closeExpandedGallery}
           >
             <button
               type="button"
               className="property-amenity-lightbox-close"
               aria-label="Cerrar imagen ampliada"
-              onClick={() => setExpandedGallery(null)}
+              onClick={(event) => {
+                event.stopPropagation()
+                closeExpandedGallery()
+              }}
             >
               <CircleX />
             </button>
 
             <div
-              className="property-amenity-lightbox-frame"
+              className="property-gallery-lightbox-stage"
               onClick={(event) => event.stopPropagation()}
             >
-              <Image
-                src={expandedGallery.image.src}
-                alt={expandedGallery.image.alt}
-                fill
-                sizes="100vw"
-                className="property-amenity-lightbox-image"
-              />
+              {canNavigateExpandedGallery ? (
+                <>
+                  <button
+                    type="button"
+                    className="property-gallery-lightbox-nav property-gallery-lightbox-nav-previous"
+                    aria-label="Ver imagen anterior"
+                    disabled={!canGoToPreviousExpandedGallery}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      stepExpandedGallery(-1)
+                    }}
+                  >
+                    <ChevronLeft />
+                  </button>
+
+                  <button
+                    type="button"
+                    className="property-gallery-lightbox-nav property-gallery-lightbox-nav-next"
+                    aria-label="Ver siguiente imagen"
+                    disabled={!canGoToNextExpandedGallery}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      stepExpandedGallery(1)
+                    }}
+                  >
+                    <ChevronRight />
+                  </button>
+                </>
+              ) : null}
+
+              <div className="property-amenity-lightbox-frame">
+                <Image
+                  src={expandedGalleryItem.image.src}
+                  alt={expandedGalleryItem.image.alt}
+                  fill
+                  sizes="100vw"
+                  className="property-amenity-lightbox-image"
+                />
+              </div>
             </div>
           </div>
         ) : null}
@@ -684,17 +866,35 @@ export function PropertyShell({ content, gallerySections }: PropertyShellProps) 
         ) : null}
 
         {activeSection === "gallery" ? (
-          <GalleryViewport
+          <FolderViewport
+            defaultFolder="exteriores"
+            folderOrder={galleryFolderOrder}
+            sectionMeta={gallerySectionMeta}
             sections={gallerySections}
-            onExpand={(item) => setExpandedGallery(item)}
+            onExpand={(items, index) => setExpandedGallery({ items, index })}
             onClose={() => setActiveSection(null)}
+            titlesOnly
+            viewportLabel="Galeria del proyecto"
+          />
+        ) : null}
+
+        {activeSection === "facades" ? (
+          <FolderViewport
+            defaultFolder="dia"
+            folderOrder={facadeFolderOrder}
+            sectionMeta={facadeSectionMeta}
+            sections={facadeSections}
+            onExpand={(items, index) => setExpandedGallery({ items, index })}
+            onClose={() => setActiveSection(null)}
+            viewportLabel="Fachadas del proyecto"
           />
         ) : null}
 
         {activeSection &&
         activeSection !== "amenities" &&
         activeSection !== "location" &&
-        activeSection !== "gallery" ? (
+        activeSection !== "gallery" &&
+        activeSection !== "facades" ? (
           <Card className="property-dock-panel">
             <CardHeader className="property-dock-panel-header">
               <div>
@@ -833,26 +1033,46 @@ export function PropertyShell({ content, gallerySections }: PropertyShellProps) 
   )
 }
 
-function GalleryViewport({
+function FolderViewport<SectionKey extends string>({
+  defaultFolder,
+  folderOrder,
+  sectionMeta,
   sections,
   onExpand,
   onClose,
+  titlesOnly,
+  viewportLabel,
 }: {
-  sections: GallerySections
-  onExpand: (item: GalleryCard) => void
+  defaultFolder: SectionKey
+  folderOrder: SectionKey[]
+  onExpand: (items: GalleryCard[], index: number) => void
   onClose: () => void
+  sectionMeta: Record<
+    SectionKey,
+    {
+      badge: string
+      coverImageSrc?: string
+      description: string
+      empty: string
+      minimalHeader?: boolean
+      title: string
+    }
+  >
+  sections: Record<SectionKey, GalleryCard[]>
+  titlesOnly?: boolean
+  viewportLabel: string
 }) {
-  const [selectedFolder, setSelectedFolder] = useState<GallerySectionKey | null>(null)
-  const activeSectionKey = selectedFolder ?? "exteriores"
+  const [selectedFolder, setSelectedFolder] = useState<SectionKey | null>(null)
+  const activeSectionKey = selectedFolder ?? defaultFolder
   const activeItems = sections[activeSectionKey]
-  const activeMeta = gallerySectionMeta[activeSectionKey]
+  const activeMeta = sectionMeta[activeSectionKey]
 
   return (
-    <section className="property-gallery-viewport" aria-label="Galeria del proyecto">
+    <section className="property-gallery-viewport" aria-label={viewportLabel}>
       <button
         type="button"
         className="property-gallery-close"
-        aria-label="Cerrar galeria"
+        aria-label={`Cerrar ${viewportLabel.toLowerCase()}`}
         onClick={onClose}
       >
         <CircleX />
@@ -872,17 +1092,25 @@ function GalleryViewport({
                   <span>Volver a carpetas</span>
                 </button>
                 <h2 className="property-gallery-title">{activeMeta.title}</h2>
+                {!titlesOnly && !activeMeta.minimalHeader ? (
+                  <>
+                    <span className="property-gallery-kicker">{activeMeta.badge}</span>
+                    <p className="property-gallery-description">
+                      {activeMeta.description}
+                    </p>
+                  </>
+                ) : null}
               </div>
             </header>
 
             {activeItems.length ? (
               <div className="property-gallery-grid">
-                {activeItems.map((item) => (
+                {activeItems.map((item, index) => (
                   <button
                     key={item.id}
                     type="button"
                     className="property-gallery-tile"
-                    onClick={() => onExpand(item)}
+                    onClick={() => onExpand(activeItems, index)}
                   >
                     <Image
                       src={item.image.src}
@@ -891,10 +1119,12 @@ function GalleryViewport({
                       sizes="(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw"
                       className="property-gallery-media-image"
                     />
-                    <span className="property-gallery-tile-copy">
-                      <span className="property-gallery-tile-phase">{item.phase}</span>
-                      <span className="property-gallery-tile-title">{item.title}</span>
-                    </span>
+                    {!titlesOnly ? (
+                      <span className="property-gallery-tile-copy">
+                        <span className="property-gallery-tile-phase">{item.phase}</span>
+                        <span className="property-gallery-tile-title">{item.title}</span>
+                      </span>
+                    ) : null}
                     <span className="property-amenity-media-expand">
                       <Maximize2 />
                       <span>Ver grande</span>
@@ -911,9 +1141,14 @@ function GalleryViewport({
           </>
         ) : (
           <div className="property-gallery-folders">
-            {galleryFolderOrder.map((folderKey) => {
-              const meta = gallerySectionMeta[folderKey]
-              const coverItem = sections[folderKey][0] ?? null
+            {folderOrder.map((folderKey) => {
+              const meta = sectionMeta[folderKey]
+              const coverItem =
+                sections[folderKey].find(
+                  (item) => item.image.src === meta.coverImageSrc
+                ) ??
+                sections[folderKey][0] ??
+                null
 
               return (
                 <button

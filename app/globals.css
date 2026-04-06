@@ -1096,9 +1096,54 @@
   color: rgba(255, 252, 244, 0.94);
 }
 
+.property-gallery-lightbox-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.6rem;
+  height: 4.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(26, 28, 27, 0.78);
+  color: rgba(255, 252, 244, 0.94);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+  transform: translateY(-50%);
+  backdrop-filter: blur(12px);
+}
+
+.property-gallery-lightbox-nav:disabled {
+  opacity: 0.34;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.property-gallery-lightbox-nav svg {
+  width: 2rem;
+  height: 2rem;
+}
+
+.property-gallery-lightbox-nav-previous {
+  left: 0;
+}
+
+.property-gallery-lightbox-nav-next {
+  right: 0;
+}
+
+.property-gallery-lightbox-stage {
+  position: relative;
+  width: min(90rem, calc(100vw - 2rem));
+  max-width: 100%;
+  padding-inline: 5.8rem;
+  box-sizing: border-box;
+}
+
 .property-amenity-lightbox-frame {
   position: relative;
-  width: min(78rem, calc(100vw - 2rem));
+  width: 100%;
   max-width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
@@ -1504,11 +1549,12 @@
 }
 
 .property-dock {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
   gap: 0.5rem;
-  min-width: min(33rem, calc(100vw - 1.5rem));
-  padding: 0.55rem;
+  min-width: min(38rem, calc(100vw - 1.2rem));
+  padding: 0.48rem;
   border-radius: 1.35rem;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(72, 91, 57, 0.82);
@@ -1534,12 +1580,14 @@
 
 .property-dock-item {
   display: flex;
+  flex: 1 1 0;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
-  min-height: 4.2rem;
-  padding: 0.65rem 0.8rem;
+  gap: 0.24rem;
+  min-height: 3.8rem;
+  min-width: 0;
+  padding: 0.52rem 0.56rem;
   border: 0;
   border-radius: 0.95rem;
   background: rgba(255, 255, 255, 0.08);
@@ -1556,7 +1604,10 @@
 }
 
 .property-dock-item span {
-  font-size: 0.82rem;
+  max-width: 100%;
+  font-size: 0.74rem;
+  line-height: 1.05;
+  white-space: nowrap;
 }
 
 .property-dock-item:hover {
@@ -1709,6 +1760,20 @@
   .property-gallery-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.65rem;
+  }
+
+  .property-gallery-lightbox-nav {
+    width: 4rem;
+    height: 4rem;
+  }
+
+  .property-gallery-lightbox-nav svg {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .property-gallery-lightbox-stage {
+    padding-inline: 4.8rem;
   }
 
   .property-gallery-shell {
@@ -1920,7 +1985,7 @@
   .property-dock-shell {
     bottom: 0.7rem;
     gap: 0.32rem;
-    width: min(23.25rem, calc(100vw - 2.5rem));
+    width: min(31rem, calc(100vw - 1.25rem));
   }
 
   .property-dock-chevron {
@@ -1933,14 +1998,16 @@
     width: 100%;
     min-width: 0;
     gap: 0.18rem;
-    padding: 0.2rem;
+    display: flex;
+    flex-wrap: nowrap;
+    padding: 0.17rem;
     border-radius: 0.88rem;
   }
 
   .property-dock-item {
-    gap: 0.1rem;
-    min-height: 2.4rem;
-    padding: 0.2rem 0.16rem;
+    gap: 0.08rem;
+    min-height: 2.18rem;
+    padding: 0.14rem 0.08rem;
     border-radius: 0.64rem;
   }
 
@@ -1950,7 +2017,7 @@
   }
 
   .property-dock-item span {
-    font-size: 0.5rem;
+    font-size: 0.42rem;
     line-height: 1;
   }
 
@@ -2191,6 +2258,20 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .property-gallery-lightbox-nav {
+    width: 3.45rem;
+    height: 3.45rem;
+  }
+
+  .property-gallery-lightbox-nav svg {
+    width: 1.55rem;
+    height: 1.55rem;
+  }
+
+  .property-gallery-lightbox-stage {
+    padding-inline: 4rem;
+  }
+
   .property-contact-button span,
   .property-contact-button svg {
     transform: none;
@@ -2202,8 +2283,9 @@
   }
 
   .property-dock {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    overflow-x: auto;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: hidden;
     gap: 0.12rem;
     padding: 0.16rem;
     border-radius: 0.8rem;
@@ -2212,7 +2294,7 @@
   .property-dock-shell {
     bottom: 0.52rem;
     gap: 0.22rem;
-    width: min(20rem, calc(100vw - 1.8rem));
+    width: min(25rem, calc(100vw - 1rem));
   }
 
   .property-dock-chevron {
@@ -2223,8 +2305,8 @@
 
   .property-dock-item {
     gap: 0.08rem;
-    min-height: 2.15rem;
-    padding: 0.14rem 0.1rem;
+    min-height: 2rem;
+    padding: 0.12rem 0.08rem;
     border-radius: 0.56rem;
   }
 
@@ -2234,7 +2316,7 @@
   }
 
   .property-dock-item span {
-    font-size: 0.44rem;
+    font-size: 0.38rem;
     line-height: 1;
   }
 
@@ -2331,7 +2413,7 @@
   .property-dock-shell {
     bottom: 0.5rem;
     gap: 0.22rem;
-    width: min(20.4rem, calc(100vw - 1.7rem));
+    width: min(24.5rem, calc(100vw - 0.95rem));
   }
 
   .property-dock-chevron {
@@ -2342,15 +2424,17 @@
   .property-dock {
     width: 100%;
     min-width: 0;
+    display: flex;
+    flex-wrap: nowrap;
     gap: 0.12rem;
     padding: 0.16rem;
     border-radius: 0.82rem;
   }
 
   .property-dock-item {
-    min-height: 2.15rem;
+    min-height: 2rem;
     gap: 0.08rem;
-    padding: 0.14rem 0.12rem;
+    padding: 0.12rem 0.08rem;
     border-radius: 0.56rem;
   }
 
@@ -2360,7 +2444,7 @@
   }
 
   .property-dock-item span {
-    font-size: 0.45rem;
+    font-size: 0.39rem;
     line-height: 1;
   }
 
@@ -2564,6 +2648,20 @@
   .property-gallery-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.5rem;
+  }
+
+  .property-gallery-lightbox-nav {
+    width: 2.95rem;
+    height: 2.95rem;
+  }
+
+  .property-gallery-lightbox-nav svg {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+
+  .property-gallery-lightbox-stage {
+    padding-inline: 3.25rem;
   }
 
   .viewer-hint {

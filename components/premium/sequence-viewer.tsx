@@ -4,16 +4,25 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import type { ViewerSequenceConfig } from "@/lib/premium-content"
 
+export type SequenceViewportGeometry = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 type SequenceViewerProps = {
   config: ViewerSequenceConfig
   focusFrame?: number | null
   onFrameChange?: (frame: number) => void
+  onViewportGeometryChange?: (geometry: SequenceViewportGeometry | null) => void
 }
 
 export function SequenceViewer({
   config,
   focusFrame = null,
   onFrameChange,
+  onViewportGeometryChange,
 }: SequenceViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const imagesRef = useRef<(HTMLImageElement | null)[]>(
@@ -36,6 +45,7 @@ export function SequenceViewer({
   const hasPlayedIntroRef = useRef(false)
   const introReadyCountRef = useRef(0)
   const loadFrameRef = useRef<(index: number) => Promise<boolean>>(async () => false)
+  const geometrySignatureRef = useRef<string | null>(null)
 
   const [completedCount, setCompletedCount] = useState(0)
   const [hasInitialFrame, setHasInitialFrame] = useState(false)
@@ -110,6 +120,24 @@ export function SequenceViewer({
     [config.filePrefix, config.fileSuffix, config.framesDir, config.padLength]
   )
 
+  const reportViewportGeometry = useCallback(
+    (geometry: SequenceViewportGeometry | null) => {
+      const nextSignature = geometry
+        ? [geometry.x, geometry.y, geometry.width, geometry.height]
+            .map((value) => value.toFixed(3))
+            .join("|")
+        : "null"
+
+      if (geometrySignatureRef.current === nextSignature) {
+        return
+      }
+
+      geometrySignatureRef.current = nextSignature
+      onViewportGeometryChange?.(geometry)
+    },
+    [onViewportGeometryChange]
+  )
+
   const stopFrameAnimation = useCallback(() => {
     if (!motionRafRef.current) {
       return
@@ -141,34 +169,37 @@ export function SequenceViewer({
 
       const dpr = window.devicePixelRatio || 1
       const rect = canvas.getBoundingClientRect()
-      const width = Math.max(1, Math.floor(rect.width * dpr))
-      const height = Math.max(1, Math.floor(rect.height * dpr))
+      const cssWidth = Math.max(1, rect.width)
+      const cssHeight = Math.max(1, rect.height)
+      const width = Math.max(1, Math.floor(cssWidth * dpr))
+      const height = Math.max(1, Math.floor(cssHeight * dpr))
 
       if (canvas.width !== width || canvas.height !== height) {
         canvas.width = width
         canvas.height = height
       }
 
-      context.clearRect(0, 0, canvas.width, canvas.height)
+      context.setTransform(dpr, 0, 0, dpr, 0, 0)
+      context.clearRect(0, 0, cssWidth, cssHeight)
 
       const sourceInsetLeft = image.naturalWidth * config.sourceInsetLeft
       const sourceInsetRight = image.naturalWidth * config.sourceInsetRight
-      const sourceX = Math.max(0, Math.floor(sourceInsetLeft))
+      const sourceX = Math.max(0, sourceInsetLeft)
       const sourceWidth = Math.max(
         1,
-        Math.floor(image.naturalWidth - sourceInsetLeft - sourceInsetRight)
+        image.naturalWidth - sourceInsetLeft - sourceInsetRight
       )
       const sourceHeight = image.naturalHeight
 
       const coverScale =
-        Math.max(canvas.width / sourceWidth, canvas.height / sourceHeight) *
+        Math.max(cssWidth / sourceWidth, cssHeight / sourceHeight) *
         config.frameScale
 
       const drawWidth = sourceWidth * coverScale
       const drawHeight = sourceHeight * coverScale
 
-      const x = (canvas.width - drawWidth) / 2
-      const y = (canvas.height - drawHeight) / 2
+      const x = (cssWidth - drawWidth) / 2
+      const y = (cssHeight - drawHeight) / 2
       context.drawImage(
         image,
         sourceX,
@@ -180,8 +211,20 @@ export function SequenceViewer({
         drawWidth,
         drawHeight
       )
+
+      reportViewportGeometry({
+        x,
+        y,
+        width: drawWidth,
+        height: drawHeight,
+      })
     },
-    [config.frameScale, config.sourceInsetLeft, config.sourceInsetRight]
+    [
+      config.frameScale,
+      config.sourceInsetLeft,
+      config.sourceInsetRight,
+      reportViewportGeometry,
+    ]
   )
 
   const drawNearestLoadedFrame = useCallback(
@@ -357,6 +400,7 @@ export function SequenceViewer({
     hasPlayedIntroRef.current = false
     introReadyCountRef.current = 0
     loadFrameRef.current = async () => false
+    geometrySignatureRef.current = null
 
     const resetStateRaf = window.requestAnimationFrame(() => {
       setCompletedCount(0)
@@ -365,6 +409,7 @@ export function SequenceViewer({
       setShowHint(true)
       setIsIntroReady(false)
       setShouldSkipIntro(false)
+      reportViewportGeometry(null)
     })
 
     return () => {
@@ -376,6 +421,7 @@ export function SequenceViewer({
     configSignature,
     stopFrameAnimation,
     stopScheduledFrameCommit,
+    reportViewportGeometry,
   ])
 
   useEffect(() => {
@@ -681,8 +727,9 @@ export function SequenceViewer({
     return () => {
       stopFrameAnimation()
       stopScheduledFrameCommit()
+      reportViewportGeometry(null)
     }
-  }, [stopFrameAnimation, stopScheduledFrameCommit])
+  }, [reportViewportGeometry, stopFrameAnimation, stopScheduledFrameCommit])
 
   const handlePointerDown = (clientX: number) => {
     stopFrameAnimation()
