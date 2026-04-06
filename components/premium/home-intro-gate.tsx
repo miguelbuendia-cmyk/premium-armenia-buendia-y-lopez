@@ -34,15 +34,26 @@ export function HomeIntroGate({
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const [introState, setIntroState] = useState<IntroState>("idle")
   const [isVideoReady, setIsVideoReady] = useState(false)
-  const [viewerLoadingPct, setViewerLoadingPct] = useState(0)
+  const [viewerCompletedCount, setViewerCompletedCount] = useState(0)
+  const [hasViewerInitialFrame, setHasViewerInitialFrame] = useState(false)
 
   const isShellVisible =
     introState === "completed" || introState === "error"
   const isPlaying = introState === "playing"
-  const introReadinessProgress = Math.round(
-    viewerLoadingPct * 0.9 + (isVideoReady ? 10 : 0)
+  const minReadyFrames = Math.min(
+    content.mainViewer.totalFrames,
+    Math.max(12, content.mainViewer.autoplayMinReadyFrames)
   )
-  const isIntroReadyToStart = isVideoReady && viewerLoadingPct >= 100
+  const viewerReadinessPct = Math.round(
+    Math.min(viewerCompletedCount, minReadyFrames) / minReadyFrames * 100
+  )
+  const introReadinessProgress = Math.round(
+    viewerReadinessPct * 0.9 + (isVideoReady ? 10 : 0)
+  )
+  const isIntroReadyToStart =
+    isVideoReady &&
+    hasViewerInitialFrame &&
+    viewerCompletedCount >= minReadyFrames
 
   useEffect(() => {
     const video = videoRef.current
@@ -101,7 +112,8 @@ export function HomeIntroGate({
           gallerySections={gallerySections}
           suppressViewerLoadingOverlay
           onViewerLoadingStateChange={(state) => {
-            setViewerLoadingPct(state.loadingPct)
+            setViewerCompletedCount(state.completedCount)
+            setHasViewerInitialFrame(state.hasInitialFrame)
           }}
         />
       </div>
