@@ -677,22 +677,6 @@ export function PropertyShell({
 
               <ScrollArea className="property-amenities-scroll">
                 <div className="property-amenities-list">
-                  <button
-                    type="button"
-                    className="property-amenity-item property-amenity-item-featured"
-                    onClick={() => {
-                      startTransition(() => {
-                        setActiveAmenityId(null)
-                        setFocusFrame(content.mainViewer.defaultFrame)
-                      })
-                    }}
-                  >
-                    <span className="property-amenity-icon">
-                      <Leaf />
-                    </span>
-                    <span>Ver todos</span>
-                  </button>
-
                   {content.amenities.map((amenity) => {
                     const Icon =
                       amenityIcons[amenity.id as keyof typeof amenityIcons] ??

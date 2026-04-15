@@ -621,7 +621,7 @@ export const premiumContent: ProjectContent = {
     },
     {
       id: "parque-ninos",
-      name: "Parque de ninos",
+      name: "Parque de niños",
       shortLabel: "Parque",
       highlight: "Espacio exterior pensado para juego seguro y vida familiar.",
       description:
@@ -635,7 +635,7 @@ export const premiumContent: ProjectContent = {
       },
       media: {
         src: "/Turco.webp",
-        alt: "Render del parque de ninos",
+        alt: "Render del parque de niños",
         placeholderLabel: "Render pendiente",
         placeholderNote:
           "Ideal para una escena familiar con mobiliario, juego seguro y paisajismo definitivo.",
