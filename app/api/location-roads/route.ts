@@ -25,23 +25,13 @@ type RoadDefinition = {
   preferredWayIds?: number[]
 }
 
-const ROAD_DEFINITIONS: RoadDefinition[] = [
-  {
-    id: "via-armenia-pereira",
-    label: "Via Armenia - Pereira",
-    match: {
-      ref: "29",
-      highway: "primary",
-    },
-    preferredWayIds: [333689403, 914975249, 1309160073, 541630190],
-  },
-]
+const ROAD_DEFINITIONS: RoadDefinition[] = []
 
 const SEARCH_RADIUS_METERS = 1200
 const OVERPASS_URL = "https://overpass.kumi.systems/api/interpreter"
 const PROJECT_LOCATION = {
-  lat: 4.576863,
-  lng: -75.646213,
+  lat: 4.576306,
+  lng: -75.646583,
 }
 
 export async function GET() {

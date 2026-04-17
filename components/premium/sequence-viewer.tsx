@@ -65,6 +65,7 @@ export function SequenceViewer({
 
   const isViewerReady =
     hasInitialFrame ||
+    // eslint-disable-next-line react-hooks/refs
     (completedCount === config.totalFrames && loadedCountRef.current > 0)
 
   const configSignature = useMemo(() => {

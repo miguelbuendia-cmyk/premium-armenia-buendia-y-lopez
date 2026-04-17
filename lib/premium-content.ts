@@ -138,6 +138,7 @@ export type LocationPoi = {
   name: string
   distanceLabel: string
   color: string
+  routeTarget: MapCoordinate
   path: MapCoordinate[]
 }
 
@@ -147,6 +148,7 @@ export type LocationEducationPoint = {
   name: string
   distanceLabel: string
   color: string
+  routeTarget: MapCoordinate
   location: MapCoordinate
 }
 
@@ -163,6 +165,24 @@ export type LocationMapContent = {
     strokeColor: string
     path: MapCoordinate[]
   }
+}
+
+export type LocationRouteDestinationKind = "poi" | "education"
+
+export type LocationRoute = {
+  destinationId: string
+  destinationKind: LocationRouteDestinationKind
+  distanceMeters: number
+  durationSeconds: number
+  path: MapCoordinate[]
+}
+
+export type LocationRouteState = {
+  destinationId: string | null
+  destinationKind: LocationRouteDestinationKind | null
+  isLoading: boolean
+  error: string | null
+  route: LocationRoute | null
 }
 
 export type ProjectContent = {
@@ -354,8 +374,8 @@ export const premiumContent: ProjectContent = {
   locationMap: {
     title: "Ubicacion",
     project: {
-      lat: 4.576863,
-      lng: -75.646213,
+      lat: 4.576306,
+      lng: -75.646583,
       label: "Premium Armenia Buendia y Lopez",
     },
     initialView: {
@@ -376,25 +396,11 @@ export const premiumContent: ProjectContent = {
     },
     roads: [
       {
-        id: "via-armenia-pereira",
-        name: "Via Armenia - Pereira",
-        color: "#d6a33a",
-        path: [
-          { lat: 4.573982, lng: -75.643984 },
-          { lat: 4.575201, lng: -75.643908 },
-          { lat: 4.576514, lng: -75.643821 },
-          { lat: 4.577861, lng: -75.643707 },
-          { lat: 4.579226, lng: -75.643511 },
-          { lat: 4.580554, lng: -75.643214 },
-          { lat: 4.581823, lng: -75.642871 },
-        ],
-      },
-      {
         id: "acceso-principal",
         name: "Acceso",
         color: "#d93b35",
         path: [
-          { lat: 4.576343, lng: -75.646606 },
+          { lat: 4.576306, lng: -75.646583 },
           { lat: 4.576616, lng: -75.646344 },
         ],
       },
@@ -406,6 +412,10 @@ export const premiumContent: ProjectContent = {
         name: "Restaurante el solar",
         distanceLabel: "2.1 km",
         color: "#cf6540",
+        routeTarget: {
+          lat: 4.591741,
+          lng: -75.640942,
+        },
         path: [
           { lat: 4.59155, lng: -75.64089 },
           { lat: 4.591908, lng: -75.640814 },
@@ -419,6 +429,10 @@ export const premiumContent: ProjectContent = {
         name: "Mall Campestre",
         distanceLabel: "600 m",
         color: "#5b8a5f",
+        routeTarget: {
+          lat: 4.573994,
+          lng: -75.646853,
+        },
         path: [
           { lat: 4.573313, lng: -75.646945 },
           { lat: 4.573846, lng: -75.646678 },
@@ -432,6 +446,10 @@ export const premiumContent: ProjectContent = {
         name: "Mall Portico",
         distanceLabel: "200 m",
         color: "#3f7fd8",
+        routeTarget: {
+          lat: 4.574035,
+          lng: -75.645435,
+        },
         path: [
           { lat: 4.574304, lng: -75.645676 },
           { lat: 4.574642, lng: -75.645165 },
@@ -447,6 +465,10 @@ export const premiumContent: ProjectContent = {
         name: "Universidad Antonio Nari\u00F1o",
         distanceLabel: "290m",
         color: "#7a5ce0",
+        routeTarget: {
+          lat: 4.577097,
+          lng: -75.64521,
+        },
         location: {
           lat: 4.577247629672778,
           lng: -75.6450332430679,
@@ -458,6 +480,10 @@ export const premiumContent: ProjectContent = {
         name: "GI School",
         distanceLabel: "2,42Km",
         color: "#4b82d9",
+        routeTarget: {
+          lat: 4.595114,
+          lng: -75.635227,
+        },
         location: {
           lat: 4.59532013542859,
           lng: -75.63482497533205,
@@ -469,6 +495,10 @@ export const premiumContent: ProjectContent = {
         name: "Colegio San Luis Rey",
         distanceLabel: "641m",
         color: "#3fa26d",
+        routeTarget: {
+          lat: 4.571649,
+          lng: -75.647083,
+        },
         location: {
           lat: 4.57148006987282,
           lng: -75.64737730604907,

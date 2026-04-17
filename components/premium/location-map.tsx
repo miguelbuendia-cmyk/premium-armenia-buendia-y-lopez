@@ -1,21 +1,23 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import L from "leaflet"
-import {
-  MapContainer,
-  Marker,
-  Polygon,
-  Polyline,
-  TileLayer,
-  Tooltip,
-  useMap,
-} from "react-leaflet"
+import maplibregl from "maplibre-gl"
+import { useEffect, useMemo, useState, type CSSProperties } from "react"
 
+import {
+  Map,
+  MapMarker,
+  MapRoute,
+  MarkerContent,
+  MarkerLabel,
+  useMap,
+} from "@/components/ui/map"
 import type {
   LocationEducationPoint,
   LocationMapContent,
   LocationPoi,
+  LocationRoute,
+  LocationRouteDestinationKind,
+  LocationRouteState,
   LocationRoad,
   MapCoordinate,
 } from "@/lib/premium-content"
@@ -26,6 +28,28 @@ type LocationMapProps = {
   selectedPoiId: string | null
   selectedEducationId: string | null
   isTerrainSelected: boolean
+  onRouteStateChange?: (state: LocationRouteState) => void
+}
+
+type PolygonLayerProperties = {
+  fillColor: string
+  fillOpacity: number
+  lineColor: string
+  lineOpacity: number
+  lineWidth: number
+}
+
+const FALLBACK_LOCATION = {
+  lat: 4.576306,
+  lng: -75.646583,
+}
+
+const EMPTY_LOCATION_ROUTE_STATE: LocationRouteState = {
+  destinationId: null,
+  destinationKind: null,
+  isLoading: false,
+  error: null,
+  route: null,
 }
 
 export function LocationMap({
@@ -34,8 +58,13 @@ export function LocationMap({
   selectedPoiId,
   selectedEducationId,
   isTerrainSelected,
+  onRouteStateChange,
 }: LocationMapProps) {
   const [serverRoads, setServerRoads] = useState<LocationRoad[] | null>(null)
+  const [routeCache, setRouteCache] = useState<
+    Record<string, LocationRoute>
+  >({})
+  const projectOrigin = content.project
 
   useEffect(() => {
     let isCancelled = false
@@ -81,6 +110,111 @@ export function LocationMap({
     }
   }, [content.roads])
 
+  useEffect(() => {
+    const selectedRouteTarget = selectedPoiId
+      ? { id: selectedPoiId, kind: "poi" as const }
+      : selectedEducationId
+        ? { id: selectedEducationId, kind: "education" as const }
+        : null
+
+    if (!selectedRouteTarget) {
+      onRouteStateChange?.(EMPTY_LOCATION_ROUTE_STATE)
+      return
+    }
+
+    const cacheKey = getRouteCacheKey(
+      selectedRouteTarget.kind,
+      selectedRouteTarget.id,
+      projectOrigin
+    )
+    const cachedRoute = routeCache[cacheKey]
+
+    if (cachedRoute) {
+      onRouteStateChange?.({
+        destinationId: selectedRouteTarget.id,
+        destinationKind: selectedRouteTarget.kind,
+        isLoading: false,
+        error: null,
+        route: cachedRoute,
+      })
+      return
+    }
+
+    let isCancelled = false
+
+    const loadRoute = async () => {
+      onRouteStateChange?.({
+        destinationId: selectedRouteTarget.id,
+        destinationKind: selectedRouteTarget.kind,
+        isLoading: true,
+        error: null,
+        route: null,
+      })
+
+      try {
+        const response = await fetch(
+          `/api/location-poi-route?kind=${encodeURIComponent(selectedRouteTarget.kind)}&id=${encodeURIComponent(selectedRouteTarget.id)}&originLat=${encodeURIComponent(projectOrigin.lat)}&originLng=${encodeURIComponent(projectOrigin.lng)}`,
+          {
+            cache: "no-store",
+          }
+        )
+
+        const payload = (await response.json()) as {
+          error?: string
+          route?: LocationRoute
+        }
+
+        if (!response.ok || !payload.route) {
+          throw new Error(payload.error ?? "No pudimos calcular la ruta")
+        }
+
+        if (isCancelled) {
+          return
+        }
+
+        setRouteCache((currentCache) => ({
+          ...currentCache,
+          [cacheKey]: payload.route!,
+        }))
+
+        onRouteStateChange?.({
+          destinationId: selectedRouteTarget.id,
+          destinationKind: selectedRouteTarget.kind,
+          isLoading: false,
+          error: null,
+          route: payload.route,
+        })
+      } catch (error) {
+        if (isCancelled) {
+          return
+        }
+
+        onRouteStateChange?.({
+          destinationId: selectedRouteTarget.id,
+          destinationKind: selectedRouteTarget.kind,
+          isLoading: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "No pudimos calcular la ruta",
+          route: null,
+        })
+      }
+    }
+
+    void loadRoute()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [
+    onRouteStateChange,
+    projectOrigin,
+    routeCache,
+    selectedEducationId,
+    selectedPoiId,
+  ])
+
   const roads = serverRoads ?? content.roads
   const selectedRoad = roads.find((road) => road.id === selectedRoadId) ?? null
   const selectedPoi = content.pois.find((poi) => poi.id === selectedPoiId) ?? null
@@ -88,68 +222,83 @@ export function LocationMap({
     content.educationPoints.find(
       (educationPoint) => educationPoint.id === selectedEducationId
     ) ?? null
+  const activeRoute = selectedPoiId
+    ? routeCache[getRouteCacheKey("poi", selectedPoiId, projectOrigin)] ?? null
+    : selectedEducationId
+      ? routeCache[
+          getRouteCacheKey("education", selectedEducationId, projectOrigin)
+        ] ?? null
+      : null
 
-  const projectMarkerIcon = useMemo(() => {
-    return L.divIcon({
-      className: "property-map-marker",
-      html: `
-        <div class="property-map-marker-shell">
-          <span class="property-map-marker-core"></span>
-        </div>
-      `,
-      iconSize: [28, 28],
-      iconAnchor: [14, 14],
-    })
-  }, [])
+  const terrainLayerData = useMemo<
+    GeoJSON.FeatureCollection<GeoJSON.Polygon, PolygonLayerProperties>
+  >(
+    () => ({
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          properties: {
+            fillColor: content.terrain.strokeColor,
+            fillOpacity: isTerrainSelected ? 0.24 : 0.16,
+            lineColor: content.terrain.strokeColor,
+            lineOpacity: isTerrainSelected ? 1 : 0.9,
+            lineWidth: isTerrainSelected ? 5 : 3,
+          },
+          geometry: {
+            type: "Polygon",
+            coordinates: [toClosedLngLatPath(content.terrain.path)],
+          },
+        },
+      ],
+    }),
+    [content.terrain.path, content.terrain.strokeColor, isTerrainSelected]
+  )
 
-  const educationMarkerIcons = useMemo(() => {
-    const buildIcon = (color: string, isActive: boolean) =>
-      L.divIcon({
-        className: "property-map-education-marker",
-        html: `
-          <div class="property-map-education-marker-shell${
-            isActive ? " property-map-education-marker-shell-active" : ""
-          }" style="color: ${color}">
-            <svg
-              class="property-map-education-marker-icon"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M21.42 10.922a1 1 0 0 0 0-1.844l-8-4a1 1 0 0 0-.894 0l-8 4a1 1 0 0 0 0 1.844l8 4a1 1 0 0 0 .894 0z"></path>
-              <path d="M22 10v6"></path>
-              <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"></path>
-            </svg>
-          </div>
-        `,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
-      })
+  const poiLayerData = useMemo<
+    GeoJSON.FeatureCollection<GeoJSON.Polygon, PolygonLayerProperties>
+  >(
+    () => ({
+      type: "FeatureCollection",
+      features: content.pois.map((poi) => {
+        const isActive = selectedPoiId === poi.id
+        const isDimmed = Boolean(selectedPoiId) && !isActive
 
-    return {
-      getDefault: (color: string) => buildIcon(color, false),
-      getActive: (color: string) => buildIcon(color, true),
-    }
-  }, [])
+        return {
+          type: "Feature" as const,
+          properties: {
+            fillColor: poi.color,
+            fillOpacity: isActive ? 0.34 : isDimmed ? 0.08 : 0.18,
+            lineColor: poi.color,
+            lineOpacity: isActive ? 0.98 : isDimmed ? 0.4 : 0.7,
+            lineWidth: isActive ? 4 : 2,
+          },
+          geometry: {
+            type: "Polygon" as const,
+            coordinates: [toClosedLngLatPath(poi.path)],
+          },
+        }
+      }),
+    }),
+    [content.pois, selectedPoiId]
+  )
+
+  const terrainCenter = useMemo(
+    () => getPolygonCenter(content.terrain.path),
+    [content.terrain.path]
+  )
 
   return (
     <div className="property-map-pane">
-      <MapContainer
-        center={[content.initialView.lat, content.initialView.lng]}
+      <Map
+        center={[content.initialView.lng, content.initialView.lat]}
         zoom={content.initialView.zoom}
-        zoomControl={false}
         className="property-map-canvas"
+        theme="light"
+        dragRotate={false}
+        pitchWithRotate={false}
+        touchPitch={false}
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-
         <MapViewportSync
           content={content}
           roads={roads}
@@ -157,60 +306,90 @@ export function LocationMap({
           educationPoints={content.educationPoints}
           selectedRoad={selectedRoad}
           selectedPoi={selectedPoi}
+          selectedRoute={activeRoute}
           selectedEducationPoint={selectedEducationPoint}
           isTerrainSelected={isTerrainSelected}
         />
 
-        <Marker
-          position={[content.project.lat, content.project.lng]}
-          icon={projectMarkerIcon}
-        />
-
-        <Polygon
-          positions={content.terrain.path.map((point) => [point.lat, point.lng] as const)}
-          pathOptions={{
-            color: content.terrain.strokeColor,
-            weight: isTerrainSelected ? 5 : 3,
-            opacity: isTerrainSelected ? 1 : 0.9,
-            fillColor: content.terrain.fillColor,
-            fillOpacity: isTerrainSelected ? 0.52 : 0.38,
-          }}
-        >
-          <Tooltip direction="center" permanent className="property-map-terrain-label">
-            {content.terrain.label}
-          </Tooltip>
-        </Polygon>
+        <PolygonLayer id="terrain" data={terrainLayerData} />
+        <PolygonLayer id="pois" data={poiLayerData} />
 
         {roads.map((road) => (
-          <Polyline
+          <MapRoute
             key={road.id}
-            positions={road.path.map((point) => [point.lat, point.lng] as const)}
-            pathOptions={{
-              color: road.color,
-              weight: selectedRoadId === road.id ? 7 : 5,
-              opacity: selectedRoadId === road.id ? 0.95 : 0.7,
-              lineCap: "round",
-              lineJoin: "round",
-            }}
+            id={road.id}
+            coordinates={toLngLatPath(road.path)}
+            color={road.color}
+            width={selectedRoadId === road.id ? 7 : 5}
+            opacity={selectedRoadId === road.id ? 0.95 : 0.7}
+            interactive={false}
           />
         ))}
 
+        {activeRoute?.path.length ? (
+          <MapRoute
+            id={`location-route-${activeRoute.destinationKind}-${activeRoute.destinationId}`}
+            coordinates={toLngLatPath(activeRoute.path)}
+            color={selectedPoi?.color ?? selectedEducationPoint?.color ?? "#4285F4"}
+            width={6}
+            opacity={0.94}
+            interactive={false}
+          />
+        ) : null}
+
+        <MapMarker
+          longitude={content.project.lng}
+          latitude={content.project.lat}
+          anchor="center"
+        >
+          <MarkerContent>
+            <div className="property-map-marker">
+              <div className="property-map-marker-shell">
+                <span className="property-map-marker-core" />
+              </div>
+            </div>
+          </MarkerContent>
+        </MapMarker>
+
+        <MapMarker longitude={terrainCenter.lng} latitude={terrainCenter.lat} anchor="center">
+          <MarkerContent className="pointer-events-none">
+            <span className="property-map-terrain-label inline-flex items-center px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em]">
+              {content.terrain.label}
+            </span>
+          </MarkerContent>
+        </MapMarker>
+
         {content.pois.map((poi) => {
+          const center = getPolygonCenter(poi.path)
+          const markerOffset = getPoiMarkerOffset(poi.id)
           const isActive = selectedPoiId === poi.id
-          const isDimmed = Boolean(selectedPoiId) && !isActive
 
           return (
-            <Polygon
-              key={poi.id}
-              positions={poi.path.map((point) => [point.lat, point.lng] as const)}
-              pathOptions={{
-                color: poi.color,
-                weight: isActive ? 4 : 2,
-                opacity: isActive ? 0.98 : isDimmed ? 0.4 : 0.7,
-                fillColor: poi.color,
-                fillOpacity: isActive ? 0.34 : isDimmed ? 0.08 : 0.18,
-              }}
-            />
+            <MapMarker
+              key={`poi-marker-${poi.id}`}
+              longitude={center.lng}
+              latitude={center.lat}
+              anchor="bottom"
+              offset={markerOffset}
+            >
+              <MarkerContent className="pointer-events-none">
+                <div className="property-map-poi-chip-wrap">
+                  <span
+                    className={`property-map-poi-chip${
+                      isActive ? " property-map-poi-chip-active" : ""
+                    }`}
+                    style={
+                      {
+                        "--poi-color": poi.color,
+                      } as CSSProperties
+                    }
+                  >
+                    <span className="property-map-poi-chip-dot" aria-hidden="true" />
+                    {poi.name}
+                  </span>
+                </div>
+              </MarkerContent>
+            </MapMarker>
           )
         })}
 
@@ -218,26 +397,138 @@ export function LocationMap({
           const isActive = selectedEducationId === educationPoint.id
 
           return (
-            <Marker
+            <MapMarker
               key={educationPoint.id}
-              position={[educationPoint.location.lat, educationPoint.location.lng]}
-              icon={
-                isActive
-                  ? educationMarkerIcons.getActive(educationPoint.color)
-                  : educationMarkerIcons.getDefault(educationPoint.color)
-              }
+              longitude={educationPoint.location.lng}
+              latitude={educationPoint.location.lat}
+              anchor="center"
             >
-              {isActive ? (
-                <Tooltip direction="top" offset={[0, -16]} className="property-map-education-label">
-                  {educationPoint.name}
-                </Tooltip>
-              ) : null}
-            </Marker>
+              <MarkerContent>
+                <div className="property-map-education-marker">
+                  <div
+                    className={`property-map-education-marker-shell${
+                      isActive ? " property-map-education-marker-shell-active" : ""
+                    }`}
+                    style={{ color: educationPoint.color }}
+                  >
+                    <svg
+                      className="property-map-education-marker-icon"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M21.42 10.922a1 1 0 0 0 0-1.844l-8-4a1 1 0 0 0-.894 0l-8 4a1 1 0 0 0 0 1.844l8 4a1 1 0 0 0 .894 0z" />
+                      <path d="M22 10v6" />
+                      <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5" />
+                    </svg>
+                  </div>
+                </div>
+                {isActive ? (
+                  <MarkerLabel
+                    className="property-map-education-label rounded-full px-3 py-1 text-[11px] font-medium"
+                  >
+                    {educationPoint.name}
+                  </MarkerLabel>
+                ) : null}
+              </MarkerContent>
+            </MapMarker>
           )
         })}
-      </MapContainer>
+      </Map>
     </div>
   )
+}
+
+function PolygonLayer({
+  id,
+  data,
+}: {
+  id: string
+  data: GeoJSON.FeatureCollection<GeoJSON.Polygon, PolygonLayerProperties>
+}) {
+  const { map, isLoaded } = useMap()
+  const sourceId = `${id}-source`
+  const fillLayerId = `${id}-fill`
+  const outlineLayerId = `${id}-outline`
+
+  useEffect(() => {
+    if (!isLoaded || !map) {
+      return
+    }
+
+    if (!map.getSource(sourceId)) {
+      map.addSource(sourceId, {
+        type: "geojson",
+        data: {
+          type: "FeatureCollection",
+          features: [],
+        },
+      })
+    }
+
+    if (!map.getLayer(fillLayerId)) {
+      map.addLayer({
+        id: fillLayerId,
+        type: "fill",
+        source: sourceId,
+        paint: {
+          "fill-color": ["get", "fillColor"],
+          "fill-opacity": ["get", "fillOpacity"],
+        },
+      })
+    }
+
+    if (!map.getLayer(outlineLayerId)) {
+      map.addLayer({
+        id: outlineLayerId,
+        type: "line",
+        source: sourceId,
+        layout: {
+          "line-cap": "round",
+          "line-join": "round",
+        },
+        paint: {
+          "line-color": ["get", "lineColor"],
+          "line-opacity": ["get", "lineOpacity"],
+          "line-width": ["get", "lineWidth"],
+        },
+      })
+    }
+
+    return () => {
+      if (!map.getStyle()) {
+        return
+      }
+
+      if (map.getLayer(outlineLayerId)) {
+        map.removeLayer(outlineLayerId)
+      }
+
+      if (map.getLayer(fillLayerId)) {
+        map.removeLayer(fillLayerId)
+      }
+
+      if (map.getSource(sourceId)) {
+        map.removeSource(sourceId)
+      }
+    }
+  }, [fillLayerId, isLoaded, map, outlineLayerId, sourceId])
+
+  useEffect(() => {
+    if (!isLoaded || !map) {
+      return
+    }
+
+    const source = map.getSource(sourceId) as maplibregl.GeoJSONSource | undefined
+    source?.setData(data)
+  }, [data, isLoaded, map, sourceId])
+
+  return null
 }
 
 function MapViewportSync({
@@ -247,6 +538,7 @@ function MapViewportSync({
   educationPoints,
   selectedRoad,
   selectedPoi,
+  selectedRoute,
   selectedEducationPoint,
   isTerrainSelected,
 }: {
@@ -256,89 +548,70 @@ function MapViewportSync({
   educationPoints: LocationEducationPoint[]
   selectedRoad: LocationRoad | null
   selectedPoi: LocationPoi | null
+  selectedRoute: LocationRoute | null
   selectedEducationPoint: LocationEducationPoint | null
   isTerrainSelected: boolean
 }) {
-  const map = useMap()
+  const { map, isLoaded } = useMap()
 
   useEffect(() => {
+    if (!map || !isLoaded) {
+      return
+    }
+
     if (selectedRoad) {
-      const bounds = L.latLngBounds(
-        selectedRoad.path.map((point) => [point.lat, point.lng] as [number, number])
-      )
-      const center = bounds.getCenter()
-      const latSpan = Math.abs(bounds.getNorth() - bounds.getSouth())
-      const lngSpan = Math.abs(bounds.getEast() - bounds.getWest())
+      fitMapToPath(map, selectedRoad.path, 64, 17)
+      return
+    }
 
-      if (Math.max(latSpan, lngSpan) < 0.00045) {
-        map.flyTo([center.lat, center.lng], 18, {
-          animate: true,
-          duration: 0.85,
-        })
-        return
-      }
-
-      map.fitBounds(bounds, {
-        padding: [56, 56],
-        maxZoom: 17,
-      })
+    if (selectedRoute?.path.length) {
+      fitMapToPath(map, selectedRoute.path, 72, 17)
       return
     }
 
     if (selectedPoi) {
       const center = getPolygonCenter(selectedPoi.path)
-      map.flyTo([center.lat, center.lng], Math.max(map.getZoom(), 17), {
-        animate: true,
-        duration: 0.85,
+      map.flyTo({
+        center: [center.lng, center.lat],
+        zoom: Math.max(map.getZoom(), 17),
+        duration: 850,
       })
       return
     }
 
     if (selectedEducationPoint) {
-      map.flyTo(
-        [
-          selectedEducationPoint.location.lat,
+      map.flyTo({
+        center: [
           selectedEducationPoint.location.lng,
+          selectedEducationPoint.location.lat,
         ],
-        17,
-        {
-          animate: true,
-          duration: 0.85,
-        }
-      )
-      return
-    }
-
-    if (isTerrainSelected) {
-      const terrainBounds = L.latLngBounds(
-        content.terrain.path.map((point) => [point.lat, point.lng] as [number, number])
-      )
-
-      map.fitBounds(terrainBounds, {
-        padding: [56, 56],
-        maxZoom: 18,
+        zoom: 17,
+        duration: 850,
       })
       return
     }
 
-    const initialBounds = buildLocationBounds(content, roads, pois, educationPoints)
+    if (isTerrainSelected) {
+      fitMapToPath(map, content.terrain.path, 64, 18)
+      return
+    }
 
-    map.fitBounds(initialBounds, {
-      padding: [80, 80],
+    const bounds = buildLocationBounds(content, roads, pois, educationPoints)
+    map.fitBounds(bounds, {
+      padding: 80,
       maxZoom: content.initialView.zoom,
     })
   }, [
-    content.initialView.zoom,
-    content.project.lat,
-    content.project.lng,
-    content.terrain.path,
+    content,
+    educationPoints,
+    isLoaded,
     isTerrainSelected,
     map,
-    educationPoints,
     pois,
     roads,
     selectedEducationPoint,
     selectedPoi,
+    selectedRoute,
     selectedRoad,
   ])
 
@@ -358,22 +631,94 @@ function buildLocationBounds(
     ...pois.flatMap((poi) => poi.path),
     ...educationPoints.map((educationPoint) => educationPoint.location),
   ]
-  const firstPoint = allPoints[0] ?? { lat: 4.576863, lng: -75.646213 }
-  const bounds = L.latLngBounds([
-    [firstPoint.lat, firstPoint.lng],
-    [firstPoint.lat, firstPoint.lng],
-  ])
 
-  allPoints.forEach((point: MapCoordinate) => {
-    bounds.extend([point.lat, point.lng])
+  return buildBoundsFromPoints(allPoints)
+}
+
+function fitMapToPath(
+  map: maplibregl.Map,
+  points: MapCoordinate[],
+  padding: number,
+  maxZoom: number
+) {
+  if (!points.length) {
+    return
+  }
+
+  if (points.length === 1) {
+    const point = points[0]
+    map.flyTo({
+      center: [point.lng, point.lat],
+      zoom: maxZoom,
+      duration: 850,
+    })
+    return
+  }
+
+  map.fitBounds(buildBoundsFromPoints(points), {
+    padding,
+    maxZoom,
+  })
+}
+
+function buildBoundsFromPoints(points: MapCoordinate[]) {
+  const firstPoint = points[0] ?? FALLBACK_LOCATION
+  const bounds = new maplibregl.LngLatBounds(
+    [firstPoint.lng, firstPoint.lat],
+    [firstPoint.lng, firstPoint.lat]
+  )
+
+  points.forEach((point) => {
+    bounds.extend([point.lng, point.lat])
   })
 
   return bounds
 }
 
+function toLngLatPath(path: MapCoordinate[]) {
+  return path.map((point) => [point.lng, point.lat] as [number, number])
+}
+
+function toClosedLngLatPath(path: MapCoordinate[]) {
+  const normalizedPath = toLngLatPath(path)
+
+  if (!normalizedPath.length) {
+    return normalizedPath
+  }
+
+  const firstPoint = normalizedPath[0]
+  const lastPoint = normalizedPath[normalizedPath.length - 1]
+
+  if (firstPoint[0] === lastPoint[0] && firstPoint[1] === lastPoint[1]) {
+    return normalizedPath
+  }
+
+  return [...normalizedPath, firstPoint]
+}
+
+function getRouteCacheKey(
+  kind: LocationRouteDestinationKind,
+  id: string,
+  origin: MapCoordinate
+) {
+  return `${kind}:${id}:${origin.lat.toFixed(6)}:${origin.lng.toFixed(6)}`
+}
+
+function getPoiMarkerOffset(poiId: string): [number, number] {
+  if (poiId === "mall-portico") {
+    return [34, -8]
+  }
+
+  if (poiId === "mall-campestre") {
+    return [-8, -6]
+  }
+
+  return [0, -6]
+}
+
 function getPolygonCenter(path: MapCoordinate[]) {
   if (!path.length) {
-    return { lat: 4.576863, lng: -75.646213 }
+    return FALLBACK_LOCATION
   }
 
   const totals = path.reduce(

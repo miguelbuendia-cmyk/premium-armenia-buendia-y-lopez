@@ -63,6 +63,7 @@ import type {
   HotspotPosition,
   LocationEducationPoint,
   LocationPoi,
+  LocationRouteState,
   LocationRoad,
   PanelSection,
   ProjectContent,
@@ -197,6 +198,14 @@ type ExpandedGalleryState = {
   items: GalleryCard[]
 }
 
+const EMPTY_LOCATION_ROUTE_STATE: LocationRouteState = {
+  destinationId: null,
+  destinationKind: null,
+  isLoading: false,
+  error: null,
+  route: null,
+}
+
 export function PropertyShell({
   content,
   facadeSections,
@@ -210,7 +219,6 @@ export function PropertyShell({
   const [activeResidenceId, setActiveResidenceId] = useState<string | null>(
     content.residences[0]?.id ?? null
   )
-  const [activeHotspotId, setActiveHotspotId] = useState<string | null>(null)
   const [expandedAmenityId, setExpandedAmenityId] = useState<string | null>(null)
   const [expandedGallery, setExpandedGallery] =
     useState<ExpandedGalleryState | null>(null)
@@ -222,6 +230,8 @@ export function PropertyShell({
   const [selectedEducationId, setSelectedEducationId] = useState<string | null>(null)
   const [isTerrainSelected, setIsTerrainSelected] = useState(false)
   const [isDockCollapsed, setIsDockCollapsed] = useState(false)
+  const [activeLocationRouteState, setActiveLocationRouteState] =
+    useState<LocationRouteState>(EMPTY_LOCATION_ROUTE_STATE)
   const [openLocationSection, setOpenLocationSection] =
     useState<LocationAccordionSection | null>("roads")
 
@@ -255,8 +265,6 @@ export function PropertyShell({
       )
   }, [content.hotspots, content.mainViewer.totalFrames, currentFrame])
 
-  const selectedRoad =
-    content.locationMap.roads.find((road) => road.id === selectedRoadId) ?? null
   const selectedPoi =
     content.locationMap.pois.find((poi) => poi.id === selectedPoiId) ?? null
   const selectedEducationPoint =
@@ -293,6 +301,18 @@ export function PropertyShell({
   const canGoToNextExpandedGallery =
     expandedGallery !== null &&
     expandedGallery.index < expandedGallery.items.length - 1
+  const displayedPoiRouteState =
+    selectedPoi &&
+    activeLocationRouteState.destinationKind === "poi" &&
+    activeLocationRouteState.destinationId === selectedPoi.id
+      ? activeLocationRouteState
+      : EMPTY_LOCATION_ROUTE_STATE
+  const displayedEducationRouteState =
+    selectedEducationPoint &&
+    activeLocationRouteState.destinationKind === "education" &&
+    activeLocationRouteState.destinationId === selectedEducationPoint.id
+      ? activeLocationRouteState
+      : EMPTY_LOCATION_ROUTE_STATE
 
   const closeExpandedGallery = () => {
     setExpandedGallery(null)
@@ -391,6 +411,7 @@ export function PropertyShell({
         setSelectedPoiId(null)
         setSelectedEducationId(null)
         setIsTerrainSelected(true)
+        setActiveLocationRouteState(EMPTY_LOCATION_ROUTE_STATE)
       }
     })
   }
@@ -405,7 +426,6 @@ export function PropertyShell({
     startTransition(() => {
       setActiveSection("amenities")
       setActiveAmenityId(amenity.id)
-      setActiveHotspotId(null)
       setFocusFrame(amenity.targetFrame)
     })
   }
@@ -414,22 +434,7 @@ export function PropertyShell({
     startTransition(() => {
       setActiveSection("residences")
       setActiveResidenceId(residence.id)
-      setActiveHotspotId(residence.id)
       setFocusFrame(residence.targetFrame)
-    })
-  }
-
-  const handleHotspotFocus = (hotspotId: string) => {
-    const hotspot = content.hotspots.find((item) => item.id === hotspotId)
-    if (!hotspot) {
-      return
-    }
-
-    startTransition(() => {
-      setActiveSection("residences")
-      setActiveHotspotId(hotspot.id)
-      setActiveResidenceId(hotspot.linkedResidenceId ?? hotspot.id)
-      setFocusFrame(hotspot.targetFrame)
     })
   }
 
@@ -437,12 +442,13 @@ export function PropertyShell({
     startTransition(() => {
       setActiveSection(null)
       setActiveAmenityId(null)
-      setActiveHotspotId(null)
       setExpandedAmenityId(null)
       setExpandedGallery(null)
       setSelectedRoadId(null)
       setSelectedPoiId(null)
+      setSelectedEducationId(null)
       setIsTerrainSelected(false)
+      setActiveLocationRouteState(EMPTY_LOCATION_ROUTE_STATE)
       setFocusFrame((currentFocusFrame) =>
         currentFocusFrame === content.mainViewer.defaultFrame
           ? null
@@ -479,6 +485,7 @@ export function PropertyShell({
             selectedPoiId={selectedPoiId}
             selectedEducationId={selectedEducationId}
             isTerrainSelected={isTerrainSelected}
+            onRouteStateChange={setActiveLocationRouteState}
           />
         ) : null}
 
@@ -508,22 +515,17 @@ export function PropertyShell({
         {activeSection !== "location" && viewerGeometry ? (
           <div className="property-hotspot-layer" aria-label="Puntos destacados">
             {trackedHotspots.map(({ hotspot, position }) => (
-              <button
+              <div
                 key={hotspot.id}
-                type="button"
-                className={cn(
-                  "property-hotspot",
-                  activeHotspotId === hotspot.id && "property-hotspot-active"
-                )}
+                className="property-hotspot"
                 style={{
                   left: `${viewerGeometry.x + position.x * viewerGeometry.width}px`,
                   top: `${viewerGeometry.y + position.y * viewerGeometry.height}px`,
                 }}
-                onClick={() => handleHotspotFocus(hotspot.id)}
               >
                 <span className="property-hotspot-pill">{hotspot.label}</span>
                 <span className="property-hotspot-ring" aria-hidden="true" />
-              </button>
+              </div>
             ))}
           </div>
         ) : null}
@@ -724,7 +726,10 @@ export function PropertyShell({
                 variant="ghost"
                 className="property-location-close"
                 aria-label="Cerrar ubicacion"
-                onClick={() => setActiveSection(null)}
+                onClick={() => {
+                  setActiveSection(null)
+                  setActiveLocationRouteState(EMPTY_LOCATION_ROUTE_STATE)
+                }}
               >
                 <CircleX />
               </Button>
@@ -762,6 +767,7 @@ export function PropertyShell({
                           setSelectedPoiId(null)
                           setSelectedEducationId(null)
                           setIsTerrainSelected(false)
+                          setActiveLocationRouteState(EMPTY_LOCATION_ROUTE_STATE)
                         }}
                       >
                         <span>Ver todos</span>
@@ -778,6 +784,7 @@ export function PropertyShell({
                           setSelectedRoadId(null)
                           setSelectedPoiId(null)
                           setSelectedEducationId(null)
+                          setActiveLocationRouteState(EMPTY_LOCATION_ROUTE_STATE)
                         }}
                       >
                         <span
@@ -798,6 +805,7 @@ export function PropertyShell({
                             setSelectedPoiId(null)
                             setSelectedEducationId(null)
                             setIsTerrainSelected(false)
+                            setActiveLocationRouteState(EMPTY_LOCATION_ROUTE_STATE)
                           }}
                         />
                       ))}
@@ -818,6 +826,9 @@ export function PropertyShell({
                           key={poi.id}
                           poi={poi}
                           isActive={selectedPoiId === poi.id}
+                          routeState={
+                            selectedPoiId === poi.id ? displayedPoiRouteState : null
+                          }
                           onClick={() => {
                             setSelectedPoiId(poi.id)
                             setSelectedRoadId(null)
@@ -843,6 +854,11 @@ export function PropertyShell({
                           key={educationPoint.id}
                           educationPoint={educationPoint}
                           isActive={selectedEducationPoint?.id === educationPoint.id}
+                          routeState={
+                            selectedEducationPoint?.id === educationPoint.id
+                              ? displayedEducationRouteState
+                              : null
+                          }
                           onClick={() => {
                             setSelectedEducationId(educationPoint.id)
                             setSelectedRoadId(null)
@@ -1267,12 +1283,16 @@ function RoadItem({
 function PoiItem({
   poi,
   isActive,
+  routeState,
   onClick,
 }: {
   poi: LocationPoi
   isActive: boolean
+  routeState: LocationRouteState | null
   onClick: () => void
 }) {
+  const routeNote = getLocationRouteNote(routeState)
+
   return (
     <button
       type="button"
@@ -1287,20 +1307,78 @@ function PoiItem({
       <span className="property-location-item-copy">
         <span className="property-location-item-title">{poi.name}</span>
         <span className="property-location-item-note">{poi.distanceLabel}</span>
+        {isActive && routeNote ? (
+          <span className="property-location-item-note">{routeNote}</span>
+        ) : null}
       </span>
     </button>
   )
 }
 
+function getLocationRouteNote(routeState: LocationRouteState | null) {
+  if (!routeState) {
+    return null
+  }
+
+  if (routeState.isLoading) {
+    return "Calculando ruta en carro..."
+  }
+
+  if (routeState.route) {
+    return `Ruta en carro: ${formatRouteDistance(routeState.route.distanceMeters)} · ${formatRouteDuration(routeState.route.durationSeconds)}`
+  }
+
+  if (routeState.error) {
+    return "Ruta en carro no disponible en este momento"
+  }
+
+  return null
+}
+
+function formatRouteDistance(distanceMeters: number) {
+  if (distanceMeters < 1000) {
+    return `${Math.round(distanceMeters)} m`
+  }
+
+  const kilometers = distanceMeters / 1000
+  const formatter = new Intl.NumberFormat("es-CO", {
+    maximumFractionDigits: kilometers >= 10 ? 0 : 1,
+    minimumFractionDigits: kilometers >= 10 ? 0 : 1,
+  })
+
+  return `${formatter.format(kilometers)} km`
+}
+
+function formatRouteDuration(durationSeconds: number) {
+  const totalMinutes = Math.max(1, Math.round(durationSeconds / 60))
+
+  if (totalMinutes < 60) {
+    return `${totalMinutes} min`
+  }
+
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+
+  if (!minutes) {
+    return `${hours} h`
+  }
+
+  return `${hours} h ${minutes} min`
+}
+
 function EducationPointItem({
   educationPoint,
   isActive,
+  routeState,
   onClick,
 }: {
   educationPoint: LocationEducationPoint
   isActive: boolean
+  routeState: LocationRouteState | null
   onClick: () => void
 }) {
+  const routeNote = getLocationRouteNote(routeState)
+
   return (
     <button
       type="button"
@@ -1319,6 +1397,9 @@ function EducationPointItem({
         <span className="property-location-item-note">
           {educationPoint.distanceLabel}
         </span>
+        {isActive && routeNote ? (
+          <span className="property-location-item-note">{routeNote}</span>
+        ) : null}
       </span>
     </button>
   )

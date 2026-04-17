@@ -1,7 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "leaflet/dist/leaflet.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -138,6 +137,12 @@
     @apply bg-background text-foreground;
     overflow: hidden;
     background: #0a0d09;
+  }
+  .maplibregl-popup-content {
+    @apply bg-transparent! shadow-none! p-0! rounded-none!;
+  }
+  .maplibregl-popup-tip {
+    @apply hidden!;
   }
 }
 
@@ -516,9 +521,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.42rem;
   transform: translate(-50%, -50%);
-  pointer-events: auto;
+  pointer-events: none;
   background: transparent;
   border: 0;
   padding: 0;
@@ -529,32 +534,28 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.7rem;
-  padding: 0.45rem 1.2rem;
+  min-height: 3.05rem;
+  padding: 0.52rem 1.38rem;
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(209, 152, 69, 0.96), rgba(187, 131, 52, 0.96));
+  background: linear-gradient(180deg, rgba(213, 153, 61, 0.98), rgba(194, 134, 43, 0.98));
   color: #fff9f0;
   font-weight: 700;
-  font-size: 0.9rem;
-  box-shadow: 0 20px 36px rgba(97, 65, 25, 0.22);
+  font-size: 0.92rem;
+  line-height: 1;
+  box-shadow:
+    0 14px 28px rgba(92, 61, 20, 0.18),
+    inset 0 1px 0 rgba(255, 243, 214, 0.16);
 }
 
 .property-hotspot-ring {
-  width: 1.95rem;
-  height: 1.95rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: 999px;
-  border: 2px solid rgba(224, 239, 228, 0.55);
-  background: rgba(53, 86, 64, 0.18);
-  box-shadow: 0 0 0 6px rgba(80, 120, 87, 0.15);
-}
-
-.property-hotspot-active .property-hotspot-pill {
-  transform: translateY(-1px);
-}
-
-.property-hotspot-active .property-hotspot-ring {
-  border-color: rgba(255, 251, 239, 0.92);
-  box-shadow: 0 0 0 8px rgba(255, 231, 177, 0.18);
+  border: 3px solid rgba(245, 238, 222, 0.92);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 0 0 4px rgba(244, 236, 217, 0.22),
+    0 10px 22px rgba(24, 26, 21, 0.12);
 }
 
 .property-map-pane {
@@ -569,20 +570,13 @@
   height: 100%;
 }
 
-.property-map-pane .leaflet-control-container {
-  display: none;
-}
-
-.property-map-pane .leaflet-container {
+.property-map-pane .maplibregl-map {
   background: #d7dbd3;
   font-family: inherit;
 }
 
-.property-map-pane .leaflet-pane,
-.property-map-pane .leaflet-tile,
-.property-map-pane .leaflet-marker-icon,
-.property-map-pane .leaflet-marker-shadow,
-.property-map-pane .leaflet-tile-container {
+.property-map-pane .maplibregl-canvas,
+.property-map-pane .maplibregl-marker {
   transition: filter 180ms ease;
 }
 
@@ -672,6 +666,45 @@
 
 .property-map-terrain-label::before {
   display: none;
+}
+
+.property-map-poi-chip-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.property-map-poi-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  padding: 0.42rem 0.72rem;
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.94);
+  border: 1px solid color-mix(in srgb, var(--poi-color) 58%, white 42%);
+  color: rgba(22, 30, 24, 0.88);
+  box-shadow:
+    0 10px 24px rgba(23, 27, 22, 0.14),
+    0 0 0 4px color-mix(in srgb, var(--poi-color) 10%, transparent 90%);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.property-map-poi-chip-active {
+  background: color-mix(in srgb, var(--poi-color) 16%, white 84%);
+  box-shadow:
+    0 12px 28px rgba(23, 27, 22, 0.2),
+    0 0 0 6px color-mix(in srgb, var(--poi-color) 16%, transparent 84%);
+}
+
+.property-map-poi-chip-dot {
+  width: 0.52rem;
+  height: 0.52rem;
+  border-radius: 999px;
+  background: var(--poi-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--poi-color) 18%, transparent 82%);
 }
 
 .property-amenities-sidebar {
@@ -1958,14 +1991,14 @@
   }
 
   .property-hotspot-pill {
-    min-height: 2.35rem;
-    padding-inline: 0.95rem;
     font-size: 0.8rem;
+    min-height: 2.55rem;
+    padding-inline: 1.05rem;
   }
 
   .property-hotspot-ring {
-    width: 1.55rem;
-    height: 1.55rem;
+    width: 1.65rem;
+    height: 1.65rem;
   }
 
   .property-dock-panel {
