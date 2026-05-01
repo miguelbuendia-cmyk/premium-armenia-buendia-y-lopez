@@ -39,7 +39,7 @@ export function HomeIntroGate({
 
   const isShellVisible =
     introState === "completed" || introState === "error"
-  const isPlaying = introState === "playing"
+  const isIntroContentVisible = introState === "idle" && !isShellVisible
   const minReadyFrames = Math.min(
     content.mainViewer.totalFrames,
     Math.max(12, content.mainViewer.autoplayMinReadyFrames)
@@ -152,7 +152,7 @@ export function HomeIntroGate({
         <div
           className={cn(
             "home-intro-content",
-            isPlaying && "home-intro-content-hidden"
+            !isIntroContentVisible && "home-intro-content-hidden"
           )}
         >
           <div className="home-intro-copy">
