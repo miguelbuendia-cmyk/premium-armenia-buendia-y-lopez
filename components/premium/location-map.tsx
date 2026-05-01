@@ -229,6 +229,16 @@ export function LocationMap({
           getRouteCacheKey("education", selectedEducationId, projectOrigin)
         ] ?? null
       : null
+  const selectedRoutePreviewPath = useMemo(() => {
+    const routeTarget =
+      selectedPoi?.routeTarget ?? selectedEducationPoint?.routeTarget ?? null
+
+    if (!routeTarget || activeRoute) {
+      return null
+    }
+
+    return [projectOrigin, routeTarget]
+  }, [activeRoute, projectOrigin, selectedEducationPoint, selectedPoi])
 
   const terrainLayerData = useMemo<
     GeoJSON.FeatureCollection<GeoJSON.Polygon, PolygonLayerProperties>
@@ -305,9 +315,8 @@ export function LocationMap({
           pois={content.pois}
           educationPoints={content.educationPoints}
           selectedRoad={selectedRoad}
-          selectedPoi={selectedPoi}
           selectedRoute={activeRoute}
-          selectedEducationPoint={selectedEducationPoint}
+          selectedRoutePreviewPath={selectedRoutePreviewPath}
           isTerrainSelected={isTerrainSelected}
         />
 
@@ -537,9 +546,8 @@ function MapViewportSync({
   pois,
   educationPoints,
   selectedRoad,
-  selectedPoi,
   selectedRoute,
-  selectedEducationPoint,
+  selectedRoutePreviewPath,
   isTerrainSelected,
 }: {
   content: LocationMapContent
@@ -547,9 +555,8 @@ function MapViewportSync({
   pois: LocationPoi[]
   educationPoints: LocationEducationPoint[]
   selectedRoad: LocationRoad | null
-  selectedPoi: LocationPoi | null
   selectedRoute: LocationRoute | null
-  selectedEducationPoint: LocationEducationPoint | null
+  selectedRoutePreviewPath: MapCoordinate[] | null
   isTerrainSelected: boolean
 }) {
   const { map, isLoaded } = useMap()
@@ -569,25 +576,8 @@ function MapViewportSync({
       return
     }
 
-    if (selectedPoi) {
-      const center = getPolygonCenter(selectedPoi.path)
-      map.flyTo({
-        center: [center.lng, center.lat],
-        zoom: Math.max(map.getZoom(), 17),
-        duration: 850,
-      })
-      return
-    }
-
-    if (selectedEducationPoint) {
-      map.flyTo({
-        center: [
-          selectedEducationPoint.location.lng,
-          selectedEducationPoint.location.lat,
-        ],
-        zoom: 17,
-        duration: 850,
-      })
+    if (selectedRoutePreviewPath?.length) {
+      fitMapToPath(map, selectedRoutePreviewPath, 72, 17)
       return
     }
 
@@ -597,6 +587,7 @@ function MapViewportSync({
     }
 
     const bounds = buildLocationBounds(content, roads, pois, educationPoints)
+    map.stop()
     map.fitBounds(bounds, {
       padding: 80,
       maxZoom: content.initialView.zoom,
@@ -609,9 +600,8 @@ function MapViewportSync({
     map,
     pois,
     roads,
-    selectedEducationPoint,
-    selectedPoi,
     selectedRoute,
+    selectedRoutePreviewPath,
     selectedRoad,
   ])
 
@@ -647,6 +637,7 @@ function fitMapToPath(
 
   if (points.length === 1) {
     const point = points[0]
+    map.stop()
     map.flyTo({
       center: [point.lng, point.lat],
       zoom: maxZoom,
@@ -655,6 +646,7 @@ function fitMapToPath(
     return
   }
 
+  map.stop()
   map.fitBounds(buildBoundsFromPoints(points), {
     padding,
     maxZoom,
