@@ -13,6 +13,7 @@ import {
 } from "react"
 import {
   ArrowLeft,
+  BookOpen,
   Building2,
   ChevronDown,
   ChevronLeft,
@@ -20,6 +21,7 @@ import {
   CircleX,
   Dumbbell,
   Ellipsis,
+  FlameKindling,
   Gamepad2,
   GlassWater,
   GraduationCap,
@@ -30,6 +32,7 @@ import {
   Maximize2,
   MessageCircleMore,
   Phone,
+  PawPrint,
   Route,
   SprayCan,
   Sparkles,
@@ -115,15 +118,21 @@ const amenityIcons = {
   turco: SprayCan,
   "parque-ninos": TentTree,
   jardines: Leaf,
+  bbq: FlameKindling,
+  "zona-mascotas": PawPrint,
   coworking: Building2,
   "zona-juegos": Gamepad2,
+  "zona-lectura": BookOpen,
   gym: Dumbbell,
 } as const
 
 const amenityMediaDimensions = {
   "/Galeria/piscina.webp": { width: 5760, height: 3654 },
   "/Jardines.webp": { width: 5760, height: 3654 },
+  "/7-BBQ.webp": { width: 3500, height: 1750 },
+  "/8-PARQUE-DE-PERROS.webp": { width: 3500, height: 2190 },
   "/GYM.webp": { width: 3500, height: 2190 },
+  "/zona-de-lectura.webp": { width: 5504, height: 3072 },
   "/ZONA%20DE%20JUEGOS.webp": { width: 3500, height: 2190 },
   "/COWORKING.webp": { width: 3500, height: 2190 },
   "/Turco.webp": { width: 2230, height: 990 },

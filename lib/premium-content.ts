@@ -583,6 +583,52 @@ export const premiumContent: ProjectContent = {
       },
     },
     {
+      id: "bbq",
+      name: "BBQ",
+      shortLabel: "BBQ",
+      highlight:
+        "Zona para encuentros al aire libre, ubicada cerca de los jardines.",
+      description:
+        "Un punto social pensado para reuniones, comidas compartidas y permanencia junto al entorno verde del proyecto.",
+      statusNote: "Amenidad ubicada cerca de Jardines dentro del recorrido.",
+      targetFrame: frameFromSequenceName("360\u00B0.0135"),
+      marker: {
+        frame: frameFromSequenceName("360\u00B0.0135"),
+        x: normalizeMainOverlayX(0.56),
+        y: 0.785,
+      },
+      media: {
+        src: "/7-BBQ.webp",
+        alt: "Render de la zona BBQ",
+        placeholderLabel: "Render de BBQ",
+        placeholderNote:
+          "Visual listo para presentar la zona BBQ junto al paisajismo del proyecto.",
+      },
+    },
+    {
+      id: "zona-mascotas",
+      name: "Zona de mascotas",
+      shortLabel: "Mascotas",
+      highlight:
+        "Espacio pet friendly integrado a las zonas verdes y cercano a Jardines.",
+      description:
+        "Refuerza la vida cotidiana del conjunto con un punto pensado para mascotas, recorridos tranquilos y contacto con el paisajismo.",
+      statusNote: "Amenidad ubicada cerca de Jardines dentro del recorrido.",
+      targetFrame: frameFromSequenceName("360\u00B0.0135"),
+      marker: {
+        frame: frameFromSequenceName("360\u00B0.0135"),
+        x: normalizeMainOverlayX(0.557),
+        y: 0.845,
+      },
+      media: {
+        src: "/8-PARQUE-DE-PERROS.webp",
+        alt: "Render de la zona de mascotas",
+        placeholderLabel: "Render de mascotas",
+        placeholderNote:
+          "Visual listo para presentar la zona de mascotas junto al paisajismo del proyecto.",
+      },
+    },
+    {
       id: "gym",
       name: "Gym",
       shortLabel: "Gym",
@@ -669,6 +715,29 @@ export const premiumContent: ProjectContent = {
         placeholderLabel: "Render pendiente",
         placeholderNote:
           "Ideal para una escena familiar con mobiliario, juego seguro y paisajismo definitivo.",
+      },
+    },
+    {
+      id: "zona-lectura",
+      name: "Zona de lectura",
+      shortLabel: "Lectura",
+      highlight:
+        "Un punto tranquilo para leer, descansar y disfrutar cerca del parque de ninos.",
+      description:
+        "Complementa la experiencia familiar con un espacio pausado para lectura, conversacion y permanencia cotidiana.",
+      statusNote: "Amenidad ubicada en el frame del Parque de ninos.",
+      targetFrame: frameFromSequenceName("360\u00B0.0064"),
+      marker: {
+        frame: frameFromSequenceName("360\u00B0.0064"),
+        x: normalizeMainOverlayX(0.478),
+        y: 0.645,
+      },
+      media: {
+        src: "/zona-de-lectura.webp",
+        alt: "Render de la zona de lectura",
+        placeholderLabel: "Render de lectura",
+        placeholderNote:
+          "Visual listo para presentar la zona de lectura junto al Parque de ninos.",
       },
     },
     {
