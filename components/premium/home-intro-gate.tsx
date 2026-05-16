@@ -15,6 +15,7 @@ import type {
   GallerySections,
   ProjectContent,
 } from "@/lib/premium-content"
+import type { TowerAExplorerData } from "@/lib/tower-a-types"
 
 import { PropertyShell } from "./property-shell"
 
@@ -22,6 +23,7 @@ type HomeIntroGateProps = {
   content: ProjectContent
   facadeSections: FacadeSections
   gallerySections: GallerySections
+  towerAExplorerData: TowerAExplorerData
 }
 
 type IntroState = "idle" | "playing" | "completed" | "error"
@@ -30,6 +32,7 @@ export function HomeIntroGate({
   content,
   facadeSections,
   gallerySections,
+  towerAExplorerData,
 }: HomeIntroGateProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const [introState, setIntroState] = useState<IntroState>("idle")
@@ -111,6 +114,7 @@ export function HomeIntroGate({
           content={content}
           facadeSections={facadeSections}
           gallerySections={gallerySections}
+          towerAExplorerData={towerAExplorerData}
           suppressViewerLoadingOverlay
           onViewerLoadingStateChange={(state) => {
             setViewerCompletedCount(state.completedCount)

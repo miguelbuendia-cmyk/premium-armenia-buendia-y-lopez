@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleX,
+  DoorOpen,
   Dumbbell,
   Ellipsis,
   FlameKindling,
@@ -72,11 +73,13 @@ import type {
   ProjectContent,
   ResidenceCard,
 } from "@/lib/premium-content"
+import type { TowerAExplorerData } from "@/lib/tower-a-types"
 
 import {
   SequenceViewer,
   type SequenceViewportGeometry,
 } from "./sequence-viewer"
+import { TowerAFloorExplorer } from "./tower-a-floor-explorer"
 
 const LocationMap = dynamic(
   () => import("./location-map").then((module) => module.LocationMap),
@@ -87,6 +90,7 @@ type PropertyShellProps = {
   content: ProjectContent
   facadeSections: FacadeSections
   gallerySections: GallerySections
+  towerAExplorerData: TowerAExplorerData
   onViewerLoadingStateChange?: (state: {
     completedCount: number
     hasInitialFrame: boolean
@@ -219,6 +223,7 @@ export function PropertyShell({
   content,
   facadeSections,
   gallerySections,
+  towerAExplorerData,
   onViewerLoadingStateChange,
   suppressViewerLoadingOverlay = false,
 }: PropertyShellProps) {
@@ -239,6 +244,9 @@ export function PropertyShell({
   const [selectedEducationId, setSelectedEducationId] = useState<string | null>(null)
   const [isTerrainSelected, setIsTerrainSelected] = useState(false)
   const [isDockCollapsed, setIsDockCollapsed] = useState(false)
+  const [isTowerAExplorerOpen, setIsTowerAExplorerOpen] = useState(false)
+  const [isTowerATransitionPlaying, setIsTowerATransitionPlaying] =
+    useState(false)
   const [activeLocationRouteState, setActiveLocationRouteState] =
     useState<LocationRouteState>(EMPTY_LOCATION_ROUTE_STATE)
   const [openLocationSection, setOpenLocationSection] =
@@ -453,6 +461,8 @@ export function PropertyShell({
       setActiveAmenityId(null)
       setExpandedAmenityId(null)
       setExpandedGallery(null)
+      setIsTowerAExplorerOpen(false)
+      setIsTowerATransitionPlaying(false)
       setSelectedRoadId(null)
       setSelectedPoiId(null)
       setSelectedEducationId(null)
@@ -463,6 +473,24 @@ export function PropertyShell({
           ? null
           : content.mainViewer.defaultFrame
       )
+    })
+  }
+
+  const openTowerAExplorer = () => {
+    startTransition(() => {
+      setActiveSection(null)
+      setActiveAmenityId(null)
+      setExpandedAmenityId(null)
+      setExpandedGallery(null)
+      setIsTowerAExplorerOpen(false)
+      setIsTowerATransitionPlaying(true)
+    })
+  }
+
+  const completeTowerATransition = () => {
+    startTransition(() => {
+      setIsTowerATransitionPlaying(false)
+      setIsTowerAExplorerOpen(true)
     })
   }
 
@@ -523,20 +551,57 @@ export function PropertyShell({
 
         {activeSection !== "location" && viewerGeometry ? (
           <div className="property-hotspot-layer" aria-label="Puntos destacados">
-            {trackedHotspots.map(({ hotspot, position }) => (
-              <div
-                key={hotspot.id}
-                className="property-hotspot"
-                style={{
-                  left: `${viewerGeometry.x + position.x * viewerGeometry.width}px`,
-                  top: `${viewerGeometry.y + position.y * viewerGeometry.height}px`,
-                }}
-              >
-                <span className="property-hotspot-pill">{hotspot.label}</span>
-                <span className="property-hotspot-ring" aria-hidden="true" />
-              </div>
-            ))}
+            {trackedHotspots.map(({ hotspot, position }) => {
+              const hotspotStyle = {
+                left: `${viewerGeometry.x + position.x * viewerGeometry.width}px`,
+                top: `${viewerGeometry.y + position.y * viewerGeometry.height}px`,
+              }
+
+              if (hotspot.id === "torre-a") {
+                return (
+                  <button
+                    key={hotspot.id}
+                    type="button"
+                    className="property-hotspot property-hotspot-button"
+                    style={hotspotStyle}
+                    disabled={isTowerAExplorerOpen || isTowerATransitionPlaying}
+                    onClick={openTowerAExplorer}
+                  >
+                    <span className="property-hotspot-pill">
+                      <span>{hotspot.label}</span>
+                      <span className="property-hotspot-action">
+                        <DoorOpen />
+                        Ingresar
+                      </span>
+                    </span>
+                    <span className="property-hotspot-ring" aria-hidden="true" />
+                  </button>
+                )
+              }
+
+              return (
+                <div
+                  key={hotspot.id}
+                  className="property-hotspot"
+                  style={hotspotStyle}
+                >
+                  <span className="property-hotspot-pill">{hotspot.label}</span>
+                  <span className="property-hotspot-ring" aria-hidden="true" />
+                </div>
+              )
+            })}
           </div>
+        ) : null}
+
+        {isTowerATransitionPlaying ? (
+          <TowerATransitionOverlay onComplete={completeTowerATransition} />
+        ) : null}
+
+        {isTowerAExplorerOpen ? (
+          <TowerAFloorExplorer
+            data={towerAExplorerData}
+            onClose={() => setIsTowerAExplorerOpen(false)}
+          />
         ) : null}
 
         {shouldShowSelectedAmenityMarker && selectedAmenity && selectedAmenityIcon ? (
@@ -1049,6 +1114,37 @@ export function PropertyShell({
           ) : null}
         </div>
       </main>
+    </div>
+  )
+}
+
+function TowerATransitionOverlay({ onComplete }: { onComplete: () => void }) {
+  useEffect(() => {
+    const fallbackTimer = window.setTimeout(onComplete, 4500)
+
+    return () => {
+      window.clearTimeout(fallbackTimer)
+    }
+  }, [onComplete])
+
+  return (
+    <div className="tower-a-transition" aria-label="Ingresando a Torre A">
+      <video
+        className="tower-a-transition-video"
+        muted
+        playsInline
+        autoPlay
+        preload="auto"
+        onEnded={onComplete}
+        onError={onComplete}
+      >
+        <source src="/torre-a-transition.mp4" type="video/mp4" />
+      </video>
+      <div className="tower-a-transition-scrim" aria-hidden="true" />
+      <div className="tower-a-transition-label">
+        <span>Torre A</span>
+        <strong>Ingresando</strong>
+      </div>
     </div>
   )
 }
