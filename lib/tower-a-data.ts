@@ -1,4 +1,4 @@
-import { readdir, readFile } from "node:fs/promises"
+import { readdir, readFile, stat } from "node:fs/promises"
 import path from "node:path"
 
 import type {
@@ -229,13 +229,19 @@ async function readTowerAFloorPlanImages() {
         }
 
         const imagePath = path.join(directory, entry.name)
-        const dimensions = await readImageDimensions(imagePath)
+        const [dimensions, imageStats] = await Promise.all([
+          readImageDimensions(imagePath),
+          stat(imagePath),
+        ])
 
         if (!imagesByFloor.has(floor)) {
           imagesByFloor.set(floor, {
             alt: `Planta piso ${floor} Torre A`,
             height: dimensions.height,
-            src: toPublicPath(...FLOOR_PLAN_FOLDER_SEGMENTS, entry.name),
+            src: withFileVersion(
+              toPublicPath(...FLOOR_PLAN_FOLDER_SEGMENTS, entry.name),
+              imageStats.mtimeMs
+            ),
             width: dimensions.width,
           })
         }
@@ -274,13 +280,19 @@ async function readTowerAUnitRenderImages() {
         }
 
         const imagePath = path.join(directory, entry.name)
-        const dimensions = await readImageDimensions(imagePath)
+        const [dimensions, imageStats] = await Promise.all([
+          readImageDimensions(imagePath),
+          stat(imagePath),
+        ])
 
         if (!imagesByUnitNumber.has(unitNumber)) {
           imagesByUnitNumber.set(unitNumber, {
             alt: `Render apartamento tipo ${unitNumber} Torre A`,
             height: dimensions.height,
-            src: toPublicPath(...UNIT_RENDER_FOLDER_SEGMENTS, entry.name),
+            src: withFileVersion(
+              toPublicPath(...UNIT_RENDER_FOLDER_SEGMENTS, entry.name),
+              imageStats.mtimeMs
+            ),
             width: dimensions.width,
           })
         }
@@ -365,6 +377,10 @@ function readJpegDimensions(buffer: Buffer) {
 
 function toPublicPath(...segments: string[]) {
   return `/${segments.map((segment) => encodeURIComponent(segment)).join("/")}`
+}
+
+function withFileVersion(src: string, mtimeMs: number) {
+  return `${src}?v=${Math.round(mtimeMs)}`
 }
 
 function isMissingDirectoryError(error: unknown): error is NodeJS.ErrnoException {

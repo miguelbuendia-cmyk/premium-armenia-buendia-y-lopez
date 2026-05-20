@@ -1,0 +1,13 @@
+
+> premium-armenia-buendia-y-lopez@0.1.0 dev
+> next dev --port 3000
+
+▲ Next.js 16.2.0 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.108:3000
+✓ Ready in 735ms
+
+ GET / 200 in 975ms (next.js: 296ms, application-code: 679ms)
+ GET /api/location-roads 200 in 128ms (next.js: 103ms, application-code: 25ms)
+ GET /api/location-roads 200 in 13ms (next.js: 5ms, application-code: 8ms)
+ GET /api/location-poi-route?kind=poi&id=mall-portico&originLat=4.576306&originLng=-75.646583 200 in 1526ms (next.js: 63ms, application-code: 1463ms)

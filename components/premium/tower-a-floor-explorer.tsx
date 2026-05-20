@@ -297,8 +297,6 @@ function UnitDetailOverlay({
             <div className="tower-a-unit-meta">
               <span>Listing ID</span>
               <strong>{unit.listingId || "N/D"}</strong>
-              <span>Amoblamiento</span>
-              <strong>{unit.furnishedStatus || "N/D"}</strong>
             </div>
           </div>
         </CardContent>

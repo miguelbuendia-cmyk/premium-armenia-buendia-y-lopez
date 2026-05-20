@@ -1,4 +1,4 @@
-export const TOWER_A_FLOORS = [3, 4, 5, 6, 7, 8, 9, 10] as const
+export const TOWER_A_FLOORS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] as const
 
 export type TowerAUnitStatus = "available" | "reserved" | "sold" | "unknown"
 

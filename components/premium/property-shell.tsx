@@ -6,9 +6,11 @@ import {
   createElement,
   startTransition,
   type ReactNode,
+  useCallback,
   useEffect,
   useEffectEvent,
   useMemo,
+  useRef,
   useState,
 } from "react"
 import {
@@ -490,6 +492,11 @@ export function PropertyShell({
   const completeTowerATransition = () => {
     startTransition(() => {
       setIsTowerATransitionPlaying(false)
+    })
+  }
+
+  const revealTowerAExplorer = () => {
+    startTransition(() => {
       setIsTowerAExplorerOpen(true)
     })
   }
@@ -594,7 +601,10 @@ export function PropertyShell({
         ) : null}
 
         {isTowerATransitionPlaying ? (
-          <TowerATransitionOverlay onComplete={completeTowerATransition} />
+          <TowerATransitionOverlay
+            onComplete={completeTowerATransition}
+            onReveal={revealTowerAExplorer}
+          />
         ) : null}
 
         {isTowerAExplorerOpen ? (
@@ -1118,27 +1128,71 @@ export function PropertyShell({
   )
 }
 
-function TowerATransitionOverlay({ onComplete }: { onComplete: () => void }) {
+function TowerATransitionOverlay({
+  onComplete,
+  onReveal,
+}: {
+  onComplete: () => void
+  onReveal: () => void
+}) {
+  const hasCompletedRef = useRef(false)
+  const fallbackTimerRef = useRef<number | null>(null)
+  const [isExiting, setIsExiting] = useState(false)
+
+  const finishTransition = useCallback(() => {
+    if (hasCompletedRef.current) {
+      return
+    }
+
+    hasCompletedRef.current = true
+    if (fallbackTimerRef.current) {
+      window.clearTimeout(fallbackTimerRef.current)
+      fallbackTimerRef.current = null
+    }
+    setIsExiting(true)
+    onReveal()
+    window.setTimeout(onComplete, 620)
+  }, [onComplete, onReveal])
+
+  const clearTransitionFallback = () => {
+    if (!fallbackTimerRef.current) {
+      return
+    }
+
+    window.clearTimeout(fallbackTimerRef.current)
+    fallbackTimerRef.current = null
+  }
+
   useEffect(() => {
-    const fallbackTimer = window.setTimeout(onComplete, 4500)
+    fallbackTimerRef.current = window.setTimeout(finishTransition, 8000)
 
     return () => {
-      window.clearTimeout(fallbackTimer)
+      if (fallbackTimerRef.current) {
+        window.clearTimeout(fallbackTimerRef.current)
+      }
     }
-  }, [onComplete])
+  }, [finishTransition])
 
   return (
-    <div className="tower-a-transition" aria-label="Ingresando a Torre A">
+    <div
+      className={cn(
+        "tower-a-transition",
+        isExiting && "tower-a-transition-exiting"
+      )}
+      aria-label="Ingresando a Torre A"
+    >
       <video
         className="tower-a-transition-video"
         muted
         playsInline
         autoPlay
         preload="auto"
-        onEnded={onComplete}
-        onError={onComplete}
+        onLoadedData={clearTransitionFallback}
+        onPlay={clearTransitionFallback}
+        onEnded={finishTransition}
+        onError={finishTransition}
       >
-        <source src="/torre-a-transition.mp4" type="video/mp4" />
+        <source src="/Torre%20A/Transicion/360_2.mp4" type="video/mp4" />
       </video>
       <div className="tower-a-transition-scrim" aria-hidden="true" />
       <div className="tower-a-transition-label">
