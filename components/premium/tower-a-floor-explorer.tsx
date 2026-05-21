@@ -286,12 +286,7 @@ function UnitDetailOverlay({
                 value={unit.totalArea ? `${formatNumber(unit.totalArea)} m2` : "N/D"}
               />
               <SummaryItem icon={BedDouble} label="Alcobas" value={unit.bedrooms ?? "N/D"} />
-              <SummaryItem icon={Bath} label="Banos" value={unit.bathrooms ?? "N/D"} />
-              <SummaryItem
-                icon={BadgeDollarSign}
-                label="Valor"
-                value={unit.marketValue ? formatCurrency(unit.marketValue) : "N/D"}
-              />
+              <SummaryItem icon={Bath} label="Baños" value={unit.bathrooms ?? "N/D"} />
             </div>
 
             <div className="tower-a-unit-meta">
@@ -321,14 +316,6 @@ function SummaryItem({
       <strong>{value}</strong>
     </div>
   )
-}
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("es-CO", {
-    currency: "COP",
-    maximumFractionDigits: 0,
-    style: "currency",
-  }).format(value)
 }
 
 function formatNumber(value: number) {

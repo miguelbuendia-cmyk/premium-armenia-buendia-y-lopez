@@ -1137,7 +1137,17 @@ function TowerATransitionOverlay({
 }) {
   const hasCompletedRef = useRef(false)
   const fallbackTimerRef = useRef<number | null>(null)
+  const revealTimerRef = useRef<number | null>(null)
   const [isExiting, setIsExiting] = useState(false)
+
+  const clearRevealTimer = () => {
+    if (!revealTimerRef.current) {
+      return
+    }
+
+    window.clearTimeout(revealTimerRef.current)
+    revealTimerRef.current = null
+  }
 
   const finishTransition = useCallback(() => {
     if (hasCompletedRef.current) {
@@ -1145,13 +1155,14 @@ function TowerATransitionOverlay({
     }
 
     hasCompletedRef.current = true
+    clearRevealTimer()
     if (fallbackTimerRef.current) {
       window.clearTimeout(fallbackTimerRef.current)
       fallbackTimerRef.current = null
     }
     setIsExiting(true)
     onReveal()
-    window.setTimeout(onComplete, 620)
+    window.setTimeout(onComplete, 1050)
   }, [onComplete, onReveal])
 
   const clearTransitionFallback = () => {
@@ -1163,6 +1174,24 @@ function TowerATransitionOverlay({
     fallbackTimerRef.current = null
   }
 
+  const scheduleSoftReveal = (video: HTMLVideoElement) => {
+    clearTransitionFallback()
+    clearRevealTimer()
+
+    const durationMs = Number.isFinite(video.duration)
+      ? Math.max(0, video.duration * 1000 - 1200)
+      : 0
+
+    if (durationMs <= 0) {
+      return
+    }
+
+    revealTimerRef.current = window.setTimeout(() => {
+      onReveal()
+      revealTimerRef.current = null
+    }, durationMs)
+  }
+
   useEffect(() => {
     fallbackTimerRef.current = window.setTimeout(finishTransition, 8000)
 
@@ -1170,6 +1199,7 @@ function TowerATransitionOverlay({
       if (fallbackTimerRef.current) {
         window.clearTimeout(fallbackTimerRef.current)
       }
+      clearRevealTimer()
     }
   }, [finishTransition])
 
@@ -1187,8 +1217,9 @@ function TowerATransitionOverlay({
         playsInline
         autoPlay
         preload="auto"
-        onLoadedData={clearTransitionFallback}
-        onPlay={clearTransitionFallback}
+        onLoadedMetadata={(event) => scheduleSoftReveal(event.currentTarget)}
+        onLoadedData={(event) => scheduleSoftReveal(event.currentTarget)}
+        onPlay={(event) => scheduleSoftReveal(event.currentTarget)}
         onEnded={finishTransition}
         onError={finishTransition}
       >
