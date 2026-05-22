@@ -72,11 +72,6 @@ const FACADE_NIGHT_FILE_NAMES = [
   "noche.webp",
 ]
 
-const FACADE_FILE_NAMES = new Set([
-  ...FACADE_DAY_FILE_NAMES,
-  ...FACADE_NIGHT_FILE_NAMES,
-])
-
 export async function getGallerySections(): Promise<GallerySections> {
   const [exteriores, interiores, apartamentos] = await Promise.all([
     readAutoGalleryCards(AUTO_GALLERY_SOURCES.exteriores),
