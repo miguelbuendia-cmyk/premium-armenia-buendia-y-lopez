@@ -148,7 +148,7 @@ const amenityMediaDimensions = {
 const gallerySectionMeta = {
   exteriores: {
     badge: "Visuales urbanas",
-    description: "Fachadas, implantacion y escenas exteriores cargadas desde Galeria y Galeria.2.",
+    description: "Fachadas, implantacion y escenas exteriores cargadas desde Exteriores.",
     empty: "Aun no hay imagenes en Exteriores.",
     title: "Exteriores",
   },

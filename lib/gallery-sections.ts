@@ -25,18 +25,11 @@ const AUTO_GALLERY_SOURCES = {
     emptyDescription: "Imagen cargada automaticamente desde Aptos Tipos.",
     emptyNote: "Titulo generado desde el nombre del archivo.",
   },
-  exterioresBase: {
-    folderName: "Galeria",
-    idPrefix: "galeria",
+  exteriores: {
+    folderName: "Exteriores",
+    idPrefix: "exteriores",
     phase: "Exterior",
-    emptyDescription: "Imagen cargada automaticamente desde Galeria.",
-    emptyNote: "Titulo generado desde el nombre del archivo.",
-  },
-  exterioresExtra: {
-    folderName: "Galeria.2",
-    idPrefix: "galeria-2",
-    phase: "Exterior",
-    emptyDescription: "Imagen cargada automaticamente desde Galeria.2.",
+    emptyDescription: "Imagen cargada automaticamente desde Exteriores.",
     emptyNote: "Titulo generado desde el nombre del archivo.",
   },
   fachadasDia: {
@@ -62,8 +55,7 @@ const AUTO_GALLERY_SOURCES = {
   },
 } satisfies Record<
   | "apartamentos"
-  | "exterioresBase"
-  | "exterioresExtra"
+  | "exteriores"
   | "fachadasDia"
   | "fachadasNoche"
   | "interiores",
@@ -85,24 +77,15 @@ const FACADE_FILE_NAMES = new Set([
   ...FACADE_NIGHT_FILE_NAMES,
 ])
 
-const EXTERIORES_HIDDEN_FILE_NAMES = new Set([
-  "Portada opcion 2 carpeta.webp",
-])
-
 export async function getGallerySections(): Promise<GallerySections> {
-  const [exterioresBase, exterioresExtra, interiores, apartamentos] = await Promise.all([
-    readAutoGalleryCards(AUTO_GALLERY_SOURCES.exterioresBase, {
-      excludeFileNames: EXTERIORES_HIDDEN_FILE_NAMES,
-    }),
-    readAutoGalleryCards(AUTO_GALLERY_SOURCES.exterioresExtra, {
-      excludeFileNames: FACADE_FILE_NAMES,
-    }),
+  const [exteriores, interiores, apartamentos] = await Promise.all([
+    readAutoGalleryCards(AUTO_GALLERY_SOURCES.exteriores),
     readAutoGalleryCards(AUTO_GALLERY_SOURCES.interiores),
     readAutoGalleryCards(AUTO_GALLERY_SOURCES.apartamentos),
   ])
 
   return {
-    exteriores: [...exterioresBase, ...exterioresExtra],
+    exteriores,
     interiores,
     apartamentos,
   }
