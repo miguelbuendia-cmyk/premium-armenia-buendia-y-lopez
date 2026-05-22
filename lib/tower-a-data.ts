@@ -15,6 +15,10 @@ const GOOGLE_SHEET_ID = "1J5aVZVlxbjL4cGoZ88a-abpwtiOOdh3nr3RB_9-RPbY"
 const GOOGLE_SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/export?format=csv`
 const FLOOR_PLAN_FOLDER_SEGMENTS = ["Torre A", "Plantas"]
 const UNIT_RENDER_FOLDER_SEGMENTS = ["Torre A", "Aptos individuales"]
+const FIRST_FLOOR_UNIT_RENDER_FOLDER_SEGMENTS = [
+  ...UNIT_RENDER_FOLDER_SEGMENTS,
+  "Piso 1",
+]
 const FLOOR_PLAN_EXTENSIONS = new Set([".avif", ".jpg", ".jpeg", ".png", ".webp"])
 const DEFAULT_PLAN_SIZE = { width: 2, height: 1 }
 
@@ -23,14 +27,24 @@ type CsvRecord = Record<string, string>
 type FloorPlanImage = NonNullable<TowerAFloorPlan["image"]>
 
 export async function getTowerAExplorerData(): Promise<TowerAExplorerData> {
-  const [units, floorPlanImages, unitRenderImages] = await Promise.all([
-    readTowerAInventoryUnits(),
-    readTowerAFloorPlanImages(),
-    readTowerAUnitRenderImages(),
-  ])
+  const [units, floorPlanImages, typicalUnitRenderImages, firstFloorUnitRenderImages] =
+    await Promise.all([
+      readTowerAInventoryUnits(),
+      readTowerAFloorPlanImages(),
+      readTowerAUnitRenderImages(UNIT_RENDER_FOLDER_SEGMENTS, "Render apartamento tipo"),
+      readTowerAUnitRenderImages(
+        FIRST_FLOOR_UNIT_RENDER_FOLDER_SEGMENTS,
+        "Render apartamento piso 1 tipo"
+      ),
+    ])
   const unitsWithRenderImages = units.map((unit) => ({
     ...unit,
-    renderImage: unitRenderImages.get(unit.unitNumber) ?? null,
+    renderImage:
+      unit.floor === 1
+        ? firstFloorUnitRenderImages.get(unit.unitNumber) ??
+          typicalUnitRenderImages.get(unit.unitNumber) ??
+          null
+        : typicalUnitRenderImages.get(unit.unitNumber) ?? null,
   }))
 
   return {
@@ -256,8 +270,8 @@ async function readTowerAFloorPlanImages() {
   return imagesByFloor
 }
 
-async function readTowerAUnitRenderImages() {
-  const directory = path.join(process.cwd(), "public", ...UNIT_RENDER_FOLDER_SEGMENTS)
+async function readTowerAUnitRenderImages(folderSegments: string[], altPrefix: string) {
+  const directory = path.join(process.cwd(), "public", ...folderSegments)
   const imagesByUnitNumber = new Map<number, TowerAImage>()
 
   try {
@@ -287,10 +301,10 @@ async function readTowerAUnitRenderImages() {
 
         if (!imagesByUnitNumber.has(unitNumber)) {
           imagesByUnitNumber.set(unitNumber, {
-            alt: `Render apartamento tipo ${unitNumber} Torre A`,
+            alt: `${altPrefix} ${unitNumber} Torre A`,
             height: dimensions.height,
             src: withFileVersion(
-              toPublicPath(...UNIT_RENDER_FOLDER_SEGMENTS, entry.name),
+              toPublicPath(...folderSegments, entry.name),
               imageStats.mtimeMs
             ),
             width: dimensions.width,

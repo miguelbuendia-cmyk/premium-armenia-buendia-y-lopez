@@ -12,17 +12,17 @@ const TYPICAL_SEVEN_UNIT_FLOOR_MARKERS: TowerAUnitMarker[] = [
 ]
 
 const FIRST_FLOOR_MARKERS: TowerAUnitMarker[] = [
-  { unitNumber: 1, x: 0.31, y: 0.2 },
-  { unitNumber: 2, x: 0.43, y: 0.22 },
-  { unitNumber: 3, x: 0.56, y: 0.22 },
-  { unitNumber: 4, x: 0.68, y: 0.21 },
-  { unitNumber: 5, x: 0.7, y: 0.38 },
-  { unitNumber: 6, x: 0.68, y: 0.61 },
-  { unitNumber: 7, x: 0.67, y: 0.8 },
+  { unitNumber: 1, x: 0.25, y: 0.44 },
+  { unitNumber: 2, x: 0.3, y: 0.22 },
+  { unitNumber: 3, x: 0.4, y: 0.12 },
+  { unitNumber: 4, x: 0.55, y: 0.12 },
+  { unitNumber: 5, x: 0.65, y: 0.29 },
+  { unitNumber: 6, x: 0.65, y: 0.5 },
+  { unitNumber: 7, x: 0.65, y: 0.75 },
   { unitNumber: 8, x: 0.55, y: 0.8 },
-  { unitNumber: 9, x: 0.43, y: 0.8 },
+  { unitNumber: 9, x: 0.4, y: 0.8 },
   { unitNumber: 10, x: 0.31, y: 0.78 },
-  { unitNumber: 11, x: 0.3, y: 0.52 },
+  { unitNumber: 11, x: 0.25, y: 0.55 },
 ]
 
 export const towerAFloorMarkers: TowerAFloorMarkerMap = Object.fromEntries(
