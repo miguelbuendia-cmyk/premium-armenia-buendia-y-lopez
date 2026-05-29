@@ -12,42 +12,42 @@ const IMAGE_EXTENSIONS = new Set([".avif", ".jpg", ".jpeg", ".png", ".webp"])
 type AutoGallerySource = {
   emptyDescription: string
   emptyNote: string
-  folderName: string
+  folderSegments: string[]
   idPrefix: string
   phase: string
 }
 
 const AUTO_GALLERY_SOURCES = {
   apartamentos: {
-    folderName: "Aptos Tipos",
+    folderSegments: ["Aptos Tipos"],
     idPrefix: "aptos-tipos",
     phase: "Apartamento",
     emptyDescription: "Imagen cargada automaticamente desde Aptos Tipos.",
     emptyNote: "Titulo generado desde el nombre del archivo.",
   },
   exteriores: {
-    folderName: "Exteriores",
+    folderSegments: ["Exteriores"],
     idPrefix: "exteriores",
     phase: "Exterior",
     emptyDescription: "Imagen cargada automaticamente desde Exteriores.",
     emptyNote: "Titulo generado desde el nombre del archivo.",
   },
   fachadasDia: {
-    folderName: "Galeria.2",
+    folderSegments: ["Fachadas", "DIA"],
     idPrefix: "fachadas-dia",
     phase: "Dia",
-    emptyDescription: "Imagen cargada automaticamente desde Galeria.2.",
+    emptyDescription: "Imagen cargada automaticamente desde Fachadas/DIA.",
     emptyNote: "Titulo generado desde el nombre del archivo.",
   },
   fachadasNoche: {
-    folderName: "Galeria.2",
+    folderSegments: ["Fachadas", "NOCHE"],
     idPrefix: "fachadas-noche",
     phase: "Noche",
-    emptyDescription: "Imagen cargada automaticamente desde Galeria.2.",
+    emptyDescription: "Imagen cargada automaticamente desde Fachadas/NOCHE.",
     emptyNote: "Titulo generado desde el nombre del archivo.",
   },
   interiores: {
-    folderName: "Interiores",
+    folderSegments: ["Interiores"],
     idPrefix: "interiores",
     phase: "Interior",
     emptyDescription: "Imagen cargada automaticamente desde Interiores.",
@@ -65,11 +65,6 @@ const AUTO_GALLERY_SOURCES = {
 const FACADE_DAY_FILE_NAMES = [
   "FRENTE 2 TORRE A SOLA_11zon.webp",
   "dia.2.webp",
-]
-
-const FACADE_NIGHT_FILE_NAMES = [
-  "noche.2.webp",
-  "noche.webp",
 ]
 
 export async function getGallerySections(): Promise<GallerySections> {
@@ -91,9 +86,7 @@ export async function getFacadeSections(): Promise<FacadeSections> {
     readAutoGalleryCards(AUTO_GALLERY_SOURCES.fachadasDia, {
       includeFileNames: FACADE_DAY_FILE_NAMES,
     }),
-    readAutoGalleryCards(AUTO_GALLERY_SOURCES.fachadasNoche, {
-      includeFileNames: FACADE_NIGHT_FILE_NAMES,
-    }),
+    readAutoGalleryCards(AUTO_GALLERY_SOURCES.fachadasNoche),
   ])
 
   return {
@@ -109,7 +102,7 @@ async function readAutoGalleryCards(
     includeFileNames?: string[]
   }
 ) {
-  const directory = path.join(process.cwd(), "public", source.folderName)
+  const directory = path.join(process.cwd(), "public", ...source.folderSegments)
   const includeOrder = options?.includeFileNames
     ? new Map(options.includeFileNames.map((name, index) => [name, index]))
     : null
@@ -161,7 +154,7 @@ async function readAutoGalleryCards(
           description: source.emptyDescription,
           note: source.emptyNote,
           image: {
-            src: toPublicPath(source.folderName, entry.name),
+            src: toPublicPath(...source.folderSegments, entry.name),
             alt: cleanedTitle,
           },
         } satisfies GalleryCard

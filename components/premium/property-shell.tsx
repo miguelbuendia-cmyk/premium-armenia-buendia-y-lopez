@@ -133,7 +133,7 @@ const amenityIcons = {
 } as const
 
 const amenityMediaDimensions = {
-  "/Galeria/piscina.webp": { width: 5760, height: 3654 },
+  "/Exteriores/piscina.webp": { width: 5760, height: 3654 },
   "/Jardines.webp": { width: 5760, height: 3654 },
   "/7-BBQ.webp": { width: 3500, height: 1750 },
   "/8-PARQUE-DE-PERROS.webp": { width: 3500, height: 2190 },
@@ -178,7 +178,7 @@ const galleryFolderOrder: GallerySectionKey[] = [
 const facadeSectionMeta = {
   dia: {
     badge: "Fachadas dia",
-    coverImageSrc: "/Galeria.2/dia.2.webp",
+    coverImageSrc: "/Fachadas/DIA/dia.2.webp",
     description: "Imagenes de fachada con luz natural para lectura comercial y urbana.",
     empty: "Aun no hay imagenes en la carpeta DIA.",
     minimalHeader: true,
@@ -186,7 +186,7 @@ const facadeSectionMeta = {
   },
   noche: {
     badge: "Fachadas noche",
-    coverImageSrc: "/Galeria.2/noche.2.webp",
+    coverImageSrc: "/Fachadas/NOCHE/Atardecer%20torres.webp",
     description: "Imagenes de fachada nocturna para revisar atmosfera e iluminacion del proyecto.",
     empty: "Aun no hay imagenes en la carpeta NOCHE.",
     minimalHeader: true,

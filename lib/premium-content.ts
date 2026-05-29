@@ -552,7 +552,7 @@ export const premiumContent: ProjectContent = {
         y: 0.779,
       },
       media: {
-        src: "/Galeria/piscina.webp",
+        src: "/Exteriores/piscina.webp",
         alt: "Render de piscina ninos y adultos",
         placeholderLabel: "Render de piscina",
         placeholderNote:
@@ -802,7 +802,7 @@ export const premiumContent: ProjectContent = {
         "Segunda opcion de fachada para comparar tono, encuadre y jerarquia visual.",
       note: "Funciona como alternativa editorial o visual comparativo.",
       image: {
-        src: "/Galeria/Portada opcion 2 carpeta.webp",
+        src: "/Exteriores/FRENTE 2 TORRE A SOLA_11zon.webp",
         alt: "Portada alternativa del proyecto",
       },
     },
@@ -814,7 +814,7 @@ export const premiumContent: ProjectContent = {
         "Visual de cocina para apoyar la lectura de acabados, funcionalidad y dise\u00F1o.",
       note: "Ideal para fichas comerciales y carruseles de interiores.",
       image: {
-        src: "/Galeria/cocina frente 3.webp",
+        src: "/Interiores/cocina frente 3.webp",
         alt: "Render de cocina",
       },
     },
@@ -826,7 +826,7 @@ export const premiumContent: ProjectContent = {
         "Vista complementaria del area social para mostrar profundidad y continuidad espacial.",
       note: "Refuerza la lectura del apartamento desde otro angulo.",
       image: {
-        src: "/Galeria/atras zona social.webp",
+        src: "/Exteriores/atras zona social.webp",
         alt: "Render posterior de zona social",
       },
     },
@@ -838,7 +838,7 @@ export const premiumContent: ProjectContent = {
         "Escena interior para completar la galeria con una lectura mas residencial y privada.",
       note: "Sirve para balancear la galeria entre exterior e interior.",
       image: {
-        src: "/Galeria/solawebpg.webp",
+        src: "/Exteriores/solawebpg.webp",
         alt: "Render interior de habitacion",
       },
     },
