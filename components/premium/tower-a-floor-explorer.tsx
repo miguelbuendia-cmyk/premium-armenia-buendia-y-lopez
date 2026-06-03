@@ -41,6 +41,11 @@ const statusLabels = {
   unknown: "Sin estado",
 } satisfies Record<TowerAUnitStatus, string>
 
+const statusLegendItems = [
+  { status: "available", label: statusLabels.available },
+  { status: "sold", label: statusLabels.sold },
+] satisfies Array<{ status: TowerAUnitStatus; label: string }>
+
 export function TowerAFloorExplorer({
   data,
   onClose,
@@ -173,6 +178,23 @@ export function TowerAFloorExplorer({
                     .length ?? 0
                 }
               />
+              <div className="tower-a-status-legend" aria-label="Leyenda de colores">
+                <span className="tower-a-status-legend-title">Leyenda</span>
+                <div className="tower-a-status-legend-items">
+                  {statusLegendItems.map((item) => (
+                    <span key={item.status} className="tower-a-status-legend-item">
+                      <span
+                        className={cn(
+                          "tower-a-status-legend-dot",
+                          `tower-a-status-legend-dot-${item.status}`
+                        )}
+                        aria-hidden="true"
+                      />
+                      {item.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </aside>

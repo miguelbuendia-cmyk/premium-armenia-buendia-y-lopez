@@ -2179,7 +2179,7 @@
 
 .tower-a-unit-marker-sold .tower-a-unit-status-dot,
 .tower-a-status-chip-sold {
-  background: #7c827b;
+  background: #d9342b;
 }
 
 .tower-a-unit-marker-unknown .tower-a-unit-status-dot,
@@ -2428,6 +2428,55 @@
   font-size: 0.92rem;
   line-height: 1.18;
   overflow-wrap: anywhere;
+}
+
+.tower-a-status-legend {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 0.55rem;
+  padding: 0.82rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tower-a-status-legend-title {
+  color: rgba(255, 245, 224, 0.62);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.tower-a-status-legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.46rem 0.82rem;
+}
+
+.tower-a-status-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  color: rgba(255, 252, 244, 0.9);
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.tower-a-status-legend-dot {
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 999px;
+  background: #7a8a9a;
+}
+
+.tower-a-status-legend-dot-available {
+  background: #19b45b;
+}
+
+.tower-a-status-legend-dot-sold {
+  background: #d9342b;
 }
 
 .tower-a-unit-meta {

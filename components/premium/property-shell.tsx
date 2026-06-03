@@ -154,6 +154,7 @@ const gallerySectionMeta = {
   },
   interiores: {
     badge: "Espacios interiores",
+    coverImageSrc: "/Interiores/Sala.webp",
     description: "Recorrido de ambientes interiores cargados desde la carpeta Interiores.",
     empty: "Aun no hay imagenes en Interiores.",
     title: "Interiores",
@@ -166,7 +167,13 @@ const gallerySectionMeta = {
   },
 } satisfies Record<
   GallerySectionKey,
-  { badge: string; description: string; empty: string; title: string }
+  {
+    badge: string
+    coverImageSrc?: string
+    description: string
+    empty: string
+    title: string
+  }
 >
 
 const galleryFolderOrder: GallerySectionKey[] = [
