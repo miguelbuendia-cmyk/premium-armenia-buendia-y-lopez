@@ -1353,7 +1353,7 @@ function FolderViewport<SectionKey extends string>({
               const meta = sectionMeta[folderKey]
               const coverItem =
                 sections[folderKey].find(
-                  (item) => item.image.src === meta.coverImageSrc
+                  (item) => stripImageVersion(item.image.src) === meta.coverImageSrc
                 ) ??
                 sections[folderKey][0] ??
                 null
@@ -1389,6 +1389,10 @@ function FolderViewport<SectionKey extends string>({
       </div>
     </section>
   )
+}
+
+function stripImageVersion(src: string) {
+  return src.split("?")[0]
 }
 
 function resolveHotspotPosition(

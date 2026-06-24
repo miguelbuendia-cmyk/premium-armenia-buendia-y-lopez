@@ -1,4 +1,4 @@
-import { readdir } from "node:fs/promises"
+import { readdir, stat } from "node:fs/promises"
 import path from "node:path"
 
 import type {
@@ -110,7 +110,7 @@ async function readAutoGalleryCards(
   try {
     const entries = await readdir(directory, { withFileTypes: true })
 
-    return entries
+    const imageEntries = entries
       .filter((entry) => {
         if (!entry.isFile()) {
           return false
@@ -144,7 +144,10 @@ async function readAutoGalleryCards(
           sensitivity: "base",
         })
       })
-      .map((entry) => {
+
+    return Promise.all(
+      imageEntries.map(async (entry) => {
+        const fileStats = await stat(path.join(directory, entry.name))
         const cleanedTitle = cleanFileLabel(entry.name)
 
         return {
@@ -154,11 +157,15 @@ async function readAutoGalleryCards(
           description: source.emptyDescription,
           note: source.emptyNote,
           image: {
-            src: toPublicPath(...source.folderSegments, entry.name),
+            src: withReloadVersion(
+              toPublicPath(...source.folderSegments, entry.name),
+              fileStats.mtimeMs
+            ),
             alt: cleanedTitle,
           },
         } satisfies GalleryCard
       })
+    )
   } catch (error) {
     if (isMissingDirectoryError(error)) {
       return []
@@ -185,6 +192,10 @@ function slugify(value: string) {
 
 function toPublicPath(...segments: string[]) {
   return `/${segments.map((segment) => encodeURIComponent(segment)).join("/")}`
+}
+
+function withReloadVersion(publicPath: string, mtimeMs: number) {
+  return `${publicPath}?v=${Math.trunc(mtimeMs)}`
 }
 
 function isMissingDirectoryError(error: unknown): error is NodeJS.ErrnoException {
