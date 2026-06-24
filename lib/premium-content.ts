@@ -343,8 +343,7 @@ export const premiumContent: ProjectContent = {
       "Tipologias y torres preparadas para recibir inventario comercial, brochure o material de cierre.",
     gallery:
       "Reserva el espacio para renders finales, tomas interiores y piezas de campana.",
-    contact:
-      "Salida directa a WhatsApp, correo o llamada para convertir interes en conversacion.",
+    contact: "",
   },
   stats: [
     { label: "Estado", value: "Lanzamiento editorial" },
@@ -844,15 +843,15 @@ export const premiumContent: ProjectContent = {
     },
   ],
   contact: {
-    projectName: "Premium Armenia Buendia y Lopez",
+    projectName: "HC Premium",
     advisorLabel: "Equipo comercial",
-    phoneDisplay: "+57 300 000 0000",
-    phoneHref: "tel:+573000000000",
-    email: "info@proyecto.com",
-    emailHref: "mailto:info@proyecto.com",
-    whatsappHref: "https://wa.me/573000000000",
+    phoneDisplay: "3004471744",
+    phoneHref: "tel:+573004471744",
+    email: "ventas1@constructorabuendia.com",
+    emailHref: "mailto:ventas1@constructorabuendia.com",
+    whatsappHref: "https://wa.me/573004471744",
     location: "Armenia, Quindio",
-    schedule: "Atencion de lunes a sabado, previa cita.",
+    schedule: "Lunes a Viernes 8 a.m-6 p.m Sabado 8 a.m-12 p.m",
   },
   mainViewer: {
     totalFrames: 190,

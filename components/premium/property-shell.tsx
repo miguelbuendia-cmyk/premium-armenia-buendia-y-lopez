@@ -23,7 +23,6 @@ import {
   CircleX,
   DoorOpen,
   Dumbbell,
-  Ellipsis,
   FlameKindling,
   Gamepad2,
   GlassWater,
@@ -34,7 +33,6 @@ import {
   MapPinned,
   Maximize2,
   MessageCircleMore,
-  Phone,
   PawPrint,
   Route,
   SprayCan,
@@ -550,16 +548,6 @@ export function PropertyShell({
               <MessageCircleMore data-icon="inline-start" />
               {content.contactCtaLabel}
             </Button>
-            <Button
-              type="button"
-              size="icon"
-              variant="secondary"
-              className="property-menu-button"
-              aria-label="Abrir informacion del proyecto"
-              onClick={() => openSection("overview")}
-            >
-              <Ellipsis />
-            </Button>
           </div>
         </header>
 
@@ -1004,9 +992,11 @@ export function PropertyShell({
                 <CardTitle className="property-panel-title">
                   {content.panelTitles[activeSection]}
                 </CardTitle>
-                <CardDescription className="property-panel-description">
-                  {content.panelDescriptions[activeSection]}
-                </CardDescription>
+                {content.panelDescriptions[activeSection] ? (
+                  <CardDescription className="property-panel-description">
+                    {content.panelDescriptions[activeSection]}
+                  </CardDescription>
+                ) : null}
               </div>
               <Button
                 type="button"
@@ -1749,17 +1739,6 @@ function ContactPanelCard({ content }: { content: ProjectContent }) {
 
   return (
     <Card className="property-info-card">
-      <CardHeader>
-        <div className="property-card-badges">
-          <Badge variant="secondary">{contact.advisorLabel}</Badge>
-          <Badge variant="outline">{contact.location}</Badge>
-        </div>
-        <CardTitle>Continua la conversacion desde este mismo micrositio.</CardTitle>
-        <CardDescription>
-          Una salida simple para WhatsApp, correo o llamada sin romper la
-          experiencia principal.
-        </CardDescription>
-      </CardHeader>
       <CardContent className="property-contact-grid">
         <div className="property-contact-row">
           <span>Proyecto</span>
@@ -1778,23 +1757,6 @@ function ContactPanelCard({ content }: { content: ProjectContent }) {
           <strong>{contact.schedule}</strong>
         </div>
       </CardContent>
-      <CardFooter className="property-contact-actions">
-        <Button asChild>
-          <a href={contact.whatsappHref} target="_blank" rel="noreferrer">
-            <MessageCircleMore data-icon="inline-start" />
-            WhatsApp
-          </a>
-        </Button>
-        <Button asChild variant="outline">
-          <a href={contact.emailHref}>Correo</a>
-        </Button>
-        <Button asChild variant="ghost">
-          <a href={contact.phoneHref}>
-            <Phone data-icon="inline-start" />
-            Llamar
-          </a>
-        </Button>
-      </CardFooter>
     </Card>
   )
 }
