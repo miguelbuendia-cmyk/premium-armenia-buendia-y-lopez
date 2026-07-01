@@ -397,7 +397,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
-  gap: 1rem;
+  pointer-events: none;
 }
 
 .property-panel-kicker,
@@ -430,6 +430,7 @@
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  pointer-events: auto;
 }
 
 .property-contact-button {
@@ -1522,13 +1523,6 @@
 
 .property-contact-row span {
   color: rgba(255, 251, 241, 0.72);
-}
-
-.property-contact-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  background: rgba(255, 255, 255, 0.03);
 }
 
 .property-gallery-viewport {
@@ -2650,10 +2644,6 @@
     width: min(22rem, calc(100vw - 4rem));
   }
 
-  .property-contact-button {
-    display: none !important;
-  }
-
   .property-topbar {
     top: 0.75rem;
     left: 0.75rem;
@@ -3069,8 +3059,10 @@
     width: 100%;
   }
 
-  .property-contact-button {
-    display: none !important;
+  .property-topbar {
+    top: 0.65rem;
+    left: 0.65rem;
+    right: 0.65rem;
   }
 
   .property-dock-panel,
@@ -3312,11 +3304,6 @@
     padding-inline: 4rem;
   }
 
-  .property-contact-button span,
-  .property-contact-button svg {
-    transform: none;
-  }
-
   .property-menu-button {
     width: 2.3rem;
     height: 2.3rem;
@@ -3495,18 +3482,10 @@
     min-height: 2.08rem;
   }
 
-  .property-contact-button {
-    display: none !important;
-  }
-
   .property-topbar {
     top: 0.65rem;
     left: 0.65rem;
     right: 0.65rem;
-  }
-
-  .property-top-actions {
-    gap: 0.5rem;
   }
 
   .property-menu-button {

@@ -60,13 +60,8 @@ export type FacadeSections = Record<FacadeSectionKey, GalleryCard[]>
 
 export type ContactInfo = {
   projectName: string
-  advisorLabel: string
   phoneDisplay: string
-  phoneHref: string
   email: string
-  emailHref: string
-  whatsappHref: string
-  location: string
   schedule: string
 }
 
@@ -844,13 +839,8 @@ export const premiumContent: ProjectContent = {
   ],
   contact: {
     projectName: "HC Premium",
-    advisorLabel: "Equipo comercial",
     phoneDisplay: "3004471744",
-    phoneHref: "tel:+573004471744",
     email: "ventas1@constructorabuendia.com",
-    emailHref: "mailto:ventas1@constructorabuendia.com",
-    whatsappHref: "https://wa.me/573004471744",
-    location: "Armenia, Quindio",
     schedule: "Lunes a Viernes 8 a.m-6 p.m Sabado 8 a.m-12 p.m",
   },
   mainViewer: {

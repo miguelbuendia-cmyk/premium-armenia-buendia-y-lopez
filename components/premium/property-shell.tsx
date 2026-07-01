@@ -1124,7 +1124,6 @@ export function PropertyShell({
     </div>
   )
 }
-
 function TowerATransitionOverlay({
   onComplete,
   onReveal,
@@ -1380,7 +1379,6 @@ function FolderViewport<SectionKey extends string>({
     </section>
   )
 }
-
 function stripImageVersion(src: string) {
   return src.split("?")[0]
 }
@@ -1760,3 +1758,4 @@ function ContactPanelCard({ content }: { content: ProjectContent }) {
     </Card>
   )
 }
+
