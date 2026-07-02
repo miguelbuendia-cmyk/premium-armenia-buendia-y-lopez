@@ -34,9 +34,11 @@ export function HomeIntroGate({
   gallerySections,
   towerAExplorerData,
 }: HomeIntroGateProps) {
-  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const backgroundVideoRef = useRef<HTMLVideoElement | null>(null)
+  const introVideoRef = useRef<HTMLVideoElement | null>(null)
   const [introState, setIntroState] = useState<IntroState>("idle")
   const [isVideoReady, setIsVideoReady] = useState(false)
+  const [hasBackgroundVideoError, setHasBackgroundVideoError] = useState(false)
   const [viewerCompletedCount, setViewerCompletedCount] = useState(0)
   const [hasViewerInitialFrame, setHasViewerInitialFrame] = useState(false)
 
@@ -47,24 +49,18 @@ export function HomeIntroGate({
     content.mainViewer.totalFrames,
     Math.max(12, content.mainViewer.autoplayMinReadyFrames)
   )
-  const viewerReadinessPct = Math.round(
-    Math.min(viewerCompletedCount, minReadyFrames) / minReadyFrames * 100
-  )
-  const introReadinessProgress = Math.round(
-    viewerReadinessPct * 0.9 + (isVideoReady ? 10 : 0)
-  )
   const isIntroReadyToStart =
     isVideoReady &&
     hasViewerInitialFrame &&
     viewerCompletedCount >= minReadyFrames
 
   useEffect(() => {
-    const video = videoRef.current
+    const video = introVideoRef.current
     if (!video) {
       return
     }
 
-    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
+    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsVideoReady(true)
     }
@@ -83,7 +79,7 @@ export function HomeIntroGate({
   }
 
   const handleStart = async () => {
-    const video = videoRef.current
+    const video = introVideoRef.current
     if (!video) {
       failOpen()
       return
@@ -94,6 +90,7 @@ export function HomeIntroGate({
     }
 
     try {
+      backgroundVideoRef.current?.pause()
       video.currentTime = 0
       startTransition(() => {
         setIntroState("playing")
@@ -131,16 +128,36 @@ export function HomeIntroGate({
         aria-hidden={isShellVisible}
       >
         <video
-          ref={videoRef}
-          className="home-intro-video"
+          ref={backgroundVideoRef}
+          className={cn(
+            "home-intro-video home-intro-background-video",
+            (introState !== "idle" || hasBackgroundVideoError) &&
+              "home-intro-background-video-hidden"
+          )}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          onError={() => {
+            setHasBackgroundVideoError(true)
+          }}
+          aria-hidden="true"
+        >
+          <source src="/Intro%20detras/Introepic.mp4" type="video/mp4" />
+        </video>
+
+        <video
+          ref={introVideoRef}
+          className={cn(
+            "home-intro-video home-intro-main-video",
+            introState !== "playing" && "home-intro-main-video-hidden"
+          )}
           muted
           playsInline
           preload="auto"
           onEnded={completeIntro}
           onError={failOpen}
-          onLoadedMetadata={() => {
-            setIsVideoReady(true)
-          }}
           onLoadedData={() => {
             setIsVideoReady(true)
           }}
@@ -169,38 +186,16 @@ export function HomeIntroGate({
               size="lg"
               className="home-intro-button"
               disabled={!isIntroReadyToStart}
+              aria-busy={!isIntroReadyToStart}
               onClick={handleStart}
             >
-              <Play data-icon="inline-start" />
-              Iniciar
+              {isIntroReadyToStart ? (
+                <Play data-icon="inline-start" />
+              ) : null}
+              {isIntroReadyToStart ? "Entrar" : "Cargando…"}
             </Button>
           </div>
         </div>
-
-        {!isIntroReadyToStart ? (
-          <div className="home-intro-loading-veil" aria-live="polite">
-            <div className="home-intro-loading-card">
-              <p className="home-intro-loading-label">
-                Cargando intro y secuencia
-              </p>
-              <div
-                className="home-intro-loading-track"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={introReadinessProgress}
-              >
-                <div
-                  className="home-intro-loading-fill"
-                  style={{ width: `${introReadinessProgress}%` }}
-                />
-              </div>
-              <p className="home-intro-loading-value">
-                {introReadinessProgress}%
-              </p>
-            </div>
-          </div>
-        ) : null}
       </div>
     </div>
   )
