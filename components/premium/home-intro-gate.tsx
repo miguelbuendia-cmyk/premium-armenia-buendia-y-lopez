@@ -26,7 +26,10 @@ type HomeIntroGateProps = {
   towerAExplorerData: TowerAExplorerData
 }
 
-type IntroState = "idle" | "playing" | "completed" | "error"
+type IntroState = "idle" | "starting" | "playing" | "completed" | "error"
+
+const INTRO_READY_TIMEOUT_MS = 8_000
+const INTRO_PLAYBACK_START_TIMEOUT_MS = 12_000
 
 export function HomeIntroGate({
   content,
@@ -36,43 +39,65 @@ export function HomeIntroGate({
 }: HomeIntroGateProps) {
   const backgroundVideoRef = useRef<HTMLVideoElement | null>(null)
   const introVideoRef = useRef<HTMLVideoElement | null>(null)
+  const playbackStartTimeoutRef = useRef<number | null>(null)
+  const isPlaybackAttemptActiveRef = useRef(false)
   const [introState, setIntroState] = useState<IntroState>("idle")
-  const [isVideoReady, setIsVideoReady] = useState(false)
   const [hasBackgroundVideoError, setHasBackgroundVideoError] = useState(false)
-  const [viewerCompletedCount, setViewerCompletedCount] = useState(0)
   const [hasViewerInitialFrame, setHasViewerInitialFrame] = useState(false)
+  const [hasReadinessTimedOut, setHasReadinessTimedOut] = useState(false)
 
   const isShellVisible =
     introState === "completed" || introState === "error"
-  const isIntroContentVisible = introState === "idle" && !isShellVisible
-  const minReadyFrames = Math.min(
-    content.mainViewer.totalFrames,
-    Math.max(12, content.mainViewer.autoplayMinReadyFrames)
-  )
-  const isIntroReadyToStart =
-    isVideoReady &&
-    hasViewerInitialFrame &&
-    viewerCompletedCount >= minReadyFrames
+  const isIntroContentVisible =
+    (introState === "idle" || introState === "starting") && !isShellVisible
+  const isIntroReadyToStart = hasViewerInitialFrame || hasReadinessTimedOut
 
   useEffect(() => {
-    const video = introVideoRef.current
-    if (!video) {
+    if (hasViewerInitialFrame) {
       return
     }
 
-    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsVideoReady(true)
+    const timeoutId = window.setTimeout(() => {
+      setHasReadinessTimedOut(true)
+    }, INTRO_READY_TIMEOUT_MS)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [hasViewerInitialFrame])
+
+  useEffect(() => {
+    return () => {
+      isPlaybackAttemptActiveRef.current = false
+      if (playbackStartTimeoutRef.current !== null) {
+        window.clearTimeout(playbackStartTimeoutRef.current)
+      }
     }
   }, [])
 
+  const clearPlaybackStartTimeout = () => {
+    if (playbackStartTimeoutRef.current === null) {
+      return
+    }
+
+    window.clearTimeout(playbackStartTimeoutRef.current)
+    playbackStartTimeoutRef.current = null
+  }
+
   const completeIntro = () => {
+    isPlaybackAttemptActiveRef.current = false
+    clearPlaybackStartTimeout()
+    backgroundVideoRef.current?.pause()
     startTransition(() => {
       setIntroState("completed")
     })
   }
 
   const failOpen = () => {
+    isPlaybackAttemptActiveRef.current = false
+    clearPlaybackStartTimeout()
+    backgroundVideoRef.current?.pause()
+    introVideoRef.current?.pause()
     startTransition(() => {
       setIntroState("error")
     })
@@ -85,17 +110,29 @@ export function HomeIntroGate({
       return
     }
 
-    if (!isIntroReadyToStart) {
+    if (!isIntroReadyToStart || introState !== "idle") {
       return
     }
 
     try {
-      backgroundVideoRef.current?.pause()
       video.currentTime = 0
+      isPlaybackAttemptActiveRef.current = true
+      setIntroState("starting")
+      playbackStartTimeoutRef.current = window.setTimeout(() => {
+        failOpen()
+      }, INTRO_PLAYBACK_START_TIMEOUT_MS)
+
+      await video.play()
+
+      if (!isPlaybackAttemptActiveRef.current) {
+        return
+      }
+
+      clearPlaybackStartTimeout()
+      backgroundVideoRef.current?.pause()
       startTransition(() => {
         setIntroState("playing")
       })
-      await video.play()
     } catch {
       failOpen()
     }
@@ -114,7 +151,6 @@ export function HomeIntroGate({
           towerAExplorerData={towerAExplorerData}
           suppressViewerLoadingOverlay
           onViewerLoadingStateChange={(state) => {
-            setViewerCompletedCount(state.completedCount)
             setHasViewerInitialFrame(state.hasInitialFrame)
           }}
         />
@@ -131,7 +167,9 @@ export function HomeIntroGate({
           ref={backgroundVideoRef}
           className={cn(
             "home-intro-video home-intro-background-video",
-            (introState !== "idle" || hasBackgroundVideoError) &&
+            (introState === "playing" ||
+              isShellVisible ||
+              hasBackgroundVideoError) &&
               "home-intro-background-video-hidden"
           )}
           autoPlay
@@ -158,12 +196,6 @@ export function HomeIntroGate({
           preload="auto"
           onEnded={completeIntro}
           onError={failOpen}
-          onLoadedData={() => {
-            setIsVideoReady(true)
-          }}
-          onCanPlay={() => {
-            setIsVideoReady(true)
-          }}
         >
           <source src="/intro.mp4" type="video/mp4" />
         </video>
@@ -185,14 +217,18 @@ export function HomeIntroGate({
               type="button"
               size="lg"
               className="home-intro-button"
-              disabled={!isIntroReadyToStart}
-              aria-busy={!isIntroReadyToStart}
+              disabled={!isIntroReadyToStart || introState === "starting"}
+              aria-busy={!isIntroReadyToStart || introState === "starting"}
               onClick={handleStart}
             >
-              {isIntroReadyToStart ? (
+              {isIntroReadyToStart && introState === "idle" ? (
                 <Play data-icon="inline-start" />
               ) : null}
-              {isIntroReadyToStart ? "Entrar" : "Cargando…"}
+              {introState === "starting"
+                ? "Iniciando…"
+                : isIntroReadyToStart
+                  ? "Entrar"
+                  : "Cargando…"}
             </Button>
           </div>
         </div>
