@@ -1301,7 +1301,10 @@ function FolderViewport<SectionKey extends string>({
             </header>
 
             {activeItems.length ? (
-              <div className="property-gallery-grid">
+              <div
+                className="property-gallery-grid"
+                data-item-count={activeItems.length}
+              >
                 {activeItems.map((item, index) => (
                   <button
                     key={item.id}
