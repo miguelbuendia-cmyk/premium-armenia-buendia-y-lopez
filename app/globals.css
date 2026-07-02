@@ -3276,40 +3276,129 @@
   }
 
   .property-gallery-shell {
+    height: 100%;
     gap: 0.7rem;
     overflow: hidden;
   }
 
   .property-gallery-viewport {
-    inset: 0.75rem 0.75rem 6.45rem;
-    padding: 3.2rem 0.55rem 0.55rem;
+    inset: 0.6rem 0.6rem 5.9rem;
+    padding: 3.15rem 0.65rem 0.65rem;
+    border-radius: 1.35rem;
   }
 
   .property-gallery-header {
+    flex: 0 0 auto;
     flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .property-gallery-copy {
+    gap: 0.3rem;
+  }
+
+  .property-gallery-back {
+    min-height: 2.35rem;
+    margin-bottom: 0.2rem;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.78rem;
+  }
+
+  .property-gallery-title {
+    font-size: 1.25rem;
+  }
+
+  .property-gallery-close {
+    top: 0.65rem;
+    right: 0.65rem;
+    width: 2.45rem;
+    height: 2.45rem;
   }
 
   .property-gallery-folders {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.5rem;
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: clamp(7.25rem, 18.5svh, 9.5rem);
+    gap: 0.65rem;
     overflow: auto;
-    align-content: start;
-    padding-right: 0.1rem;
-    padding-bottom: 0.2rem;
+    align-content: center;
+    overscroll-behavior: contain;
+    padding: 0.15rem;
+    scrollbar-width: none;
+  }
+
+  .property-gallery-folders::-webkit-scrollbar,
+  .property-gallery-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .property-gallery-folders[data-folder-count="2"] {
+    flex: 1;
+    align-content: center;
   }
 
   .property-gallery-folder-card {
-    aspect-ratio: 1.2 / 1;
+    height: 100%;
+    aspect-ratio: auto;
+    border-radius: 1rem;
   }
 
   .property-gallery-folders > .property-gallery-folder-card:last-child:nth-child(odd) {
-    max-width: min(11rem, 100%);
-    justify-self: center;
-    grid-column: 1 / -1;
+    max-width: none;
+    justify-self: stretch;
+    grid-column: auto;
+  }
+
+  .property-gallery-folder-title {
+    top: 0.65rem;
+    left: 0.65rem;
+    padding: 0.4rem 0.72rem;
+    font-size: 0.8rem;
   }
 
   .property-gallery-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: max-content;
+    align-content: start;
+    gap: 0.55rem;
+    overscroll-behavior: contain;
+    padding: 0 0.1rem 0.5rem;
+    scrollbar-width: none;
+  }
+
+  .property-gallery-tile {
+    min-height: 0;
+    aspect-ratio: 4 / 3;
+    border-radius: 0.9rem;
+  }
+
+  .property-gallery-tile .property-amenity-media-expand {
+    top: 0.45rem;
+    right: 0.45rem;
+    bottom: auto;
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    place-items: center;
+    padding: 0;
+    border-radius: 999px;
+  }
+
+  .property-gallery-tile .property-amenity-media-expand span {
+    display: none;
+  }
+
+  .property-gallery-tile-copy {
+    padding: 1.35rem 0.65rem 0.6rem;
+  }
+
+  .property-gallery-tile-phase {
+    font-size: 0.58rem;
+  }
+
+  .property-gallery-tile-title {
+    padding-right: 0;
+    font-size: 0.78rem;
   }
 
   .property-gallery-lightbox-nav {

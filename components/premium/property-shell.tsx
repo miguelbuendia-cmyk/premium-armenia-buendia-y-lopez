@@ -1313,7 +1313,7 @@ function FolderViewport<SectionKey extends string>({
                       src={item.image.src}
                       alt={item.image.alt}
                       fill
-                      sizes="(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw"
+                      sizes="(max-width: 700px) 50vw, (max-width: 1100px) 50vw, 33vw"
                       className="property-gallery-media-image"
                     />
                     {!titlesOnly ? (
@@ -1337,7 +1337,10 @@ function FolderViewport<SectionKey extends string>({
             )}
           </>
         ) : (
-          <div className="property-gallery-folders">
+          <div
+            className="property-gallery-folders"
+            data-folder-count={folderOrder.length}
+          >
             {folderOrder.map((folderKey) => {
               const meta = sectionMeta[folderKey]
               const coverItem =
@@ -1361,6 +1364,7 @@ function FolderViewport<SectionKey extends string>({
                         alt={coverItem.image.alt}
                         fill
                         sizes="(max-width: 900px) 100vw, 50vw"
+                        loading="eager"
                         className="property-gallery-media-image"
                       />
                     ) : (
