@@ -157,12 +157,6 @@ const gallerySectionMeta = {
     empty: "Aun no hay imagenes en Interiores.",
     title: "Interiores",
   },
-  apartamentos: {
-    badge: "Planos y tipos",
-    description: "Recorrido editorial para revisar distribuciones, plantas y configuraciones residenciales.",
-    empty: "Aun no hay imagenes en Aptos Tipos.",
-    title: "Apartamentos",
-  },
 } satisfies Record<
   GallerySectionKey,
   {
@@ -177,7 +171,6 @@ const gallerySectionMeta = {
 const galleryFolderOrder: GallerySectionKey[] = [
   "exteriores",
   "interiores",
-  "apartamentos",
 ]
 
 const facadeSectionMeta = {

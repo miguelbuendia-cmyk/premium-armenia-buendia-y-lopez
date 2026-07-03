@@ -50,7 +50,7 @@ export type GalleryCard = {
   }
 }
 
-export type GallerySectionKey = "exteriores" | "interiores" | "apartamentos"
+export type GallerySectionKey = "exteriores" | "interiores"
 
 export type GallerySections = Record<GallerySectionKey, GalleryCard[]>
 

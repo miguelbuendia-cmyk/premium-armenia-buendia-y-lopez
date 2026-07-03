@@ -18,13 +18,6 @@ type AutoGallerySource = {
 }
 
 const AUTO_GALLERY_SOURCES = {
-  apartamentos: {
-    folderSegments: ["Aptos Tipos"],
-    idPrefix: "aptos-tipos",
-    phase: "Apartamento",
-    emptyDescription: "Imagen cargada automaticamente desde Aptos Tipos.",
-    emptyNote: "Titulo generado desde el nombre del archivo.",
-  },
   exteriores: {
     folderSegments: ["Exteriores"],
     idPrefix: "exteriores",
@@ -54,8 +47,7 @@ const AUTO_GALLERY_SOURCES = {
     emptyNote: "Titulo generado desde el nombre del archivo.",
   },
 } satisfies Record<
-  | "apartamentos"
-  | "exteriores"
+  "exteriores"
   | "fachadasDia"
   | "fachadasNoche"
   | "interiores",
@@ -68,16 +60,14 @@ const FACADE_DAY_FILE_NAMES = [
 ]
 
 export async function getGallerySections(): Promise<GallerySections> {
-  const [exteriores, interiores, apartamentos] = await Promise.all([
+  const [exteriores, interiores] = await Promise.all([
     readAutoGalleryCards(AUTO_GALLERY_SOURCES.exteriores),
     readAutoGalleryCards(AUTO_GALLERY_SOURCES.interiores),
-    readAutoGalleryCards(AUTO_GALLERY_SOURCES.apartamentos),
   ])
 
   return {
     exteriores,
     interiores,
-    apartamentos,
   }
 }
 
