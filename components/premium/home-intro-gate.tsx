@@ -208,10 +208,6 @@ export function HomeIntroGate({
             !isIntroContentVisible && "home-intro-content-hidden"
           )}
         >
-          <div className="home-intro-copy">
-            <h1 className="home-intro-title">HC PREMIUM</h1>
-          </div>
-
           <div className="home-intro-actions">
             <Button
               type="button"
