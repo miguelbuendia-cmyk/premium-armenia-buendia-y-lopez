@@ -355,6 +355,13 @@ async function readImageDimensions(filePath: string) {
     }
   }
 
+  if (extension === ".webp") {
+    const webpDimensions = readWebpDimensions(buffer)
+    if (webpDimensions) {
+      return webpDimensions
+    }
+  }
+
   return DEFAULT_PLAN_SIZE
 }
 
@@ -387,6 +394,68 @@ function readJpegDimensions(buffer: Buffer) {
   }
 
   return null
+}
+
+function readWebpDimensions(buffer: Buffer) {
+  if (
+    buffer.length < 30 ||
+    buffer.toString("ascii", 0, 4) !== "RIFF" ||
+    buffer.toString("ascii", 8, 12) !== "WEBP"
+  ) {
+    return null
+  }
+
+  let offset = 12
+
+  while (offset + 8 <= buffer.length) {
+    const chunkType = buffer.toString("ascii", offset, offset + 4)
+    const chunkSize = buffer.readUInt32LE(offset + 4)
+    const dataOffset = offset + 8
+
+    if (dataOffset + chunkSize > buffer.length) {
+      return null
+    }
+
+    if (chunkType === "VP8X" && chunkSize >= 10) {
+      return {
+        width: readUInt24LE(buffer, dataOffset + 4) + 1,
+        height: readUInt24LE(buffer, dataOffset + 7) + 1,
+      }
+    }
+
+    if (chunkType === "VP8L" && chunkSize >= 5 && buffer[dataOffset] === 0x2f) {
+      const width =
+        1 + buffer[dataOffset + 1] + ((buffer[dataOffset + 2] & 0x3f) << 8)
+      const height =
+        1 +
+        ((buffer[dataOffset + 2] & 0xc0) >> 6) +
+        (buffer[dataOffset + 3] << 2) +
+        ((buffer[dataOffset + 4] & 0x0f) << 10)
+
+      return { width, height }
+    }
+
+    if (
+      chunkType === "VP8 " &&
+      chunkSize >= 10 &&
+      buffer[dataOffset + 3] === 0x9d &&
+      buffer[dataOffset + 4] === 0x01 &&
+      buffer[dataOffset + 5] === 0x2a
+    ) {
+      return {
+        width: buffer.readUInt16LE(dataOffset + 6) & 0x3fff,
+        height: buffer.readUInt16LE(dataOffset + 8) & 0x3fff,
+      }
+    }
+
+    offset = dataOffset + chunkSize + (chunkSize % 2)
+  }
+
+  return null
+}
+
+function readUInt24LE(buffer: Buffer, offset: number) {
+  return buffer[offset] + (buffer[offset + 1] << 8) + (buffer[offset + 2] << 16)
 }
 
 function toPublicPath(...segments: string[]) {
