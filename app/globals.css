@@ -4015,3 +4015,343 @@
     -webkit-line-clamp: 2;
   }
 }
+
+/* ============================= */
+/* Tour virtual 360 (pano-tour)  */
+/* ============================= */
+
+.pano-tour {
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  overflow: hidden;
+  background: #14100c;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: var(--font-manrope), sans-serif;
+}
+
+.pano-tour-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+}
+
+.pano-tour:active .pano-tour-canvas {
+  cursor: grabbing;
+}
+
+.pano-tour-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  color: rgba(255, 250, 243, 0.85);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  z-index: 5;
+}
+
+.pano-tour-loading-ring {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 250, 243, 0.25);
+  border-top-color: rgba(255, 250, 243, 0.9);
+  animation: pano-tour-spin 0.9s linear infinite;
+}
+
+@keyframes pano-tour-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pano-tour-topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem 2.6rem;
+  background: linear-gradient(
+    to bottom,
+    rgba(15, 11, 7, 0.62),
+    rgba(15, 11, 7, 0)
+  );
+  z-index: 4;
+  pointer-events: none;
+}
+
+.pano-tour-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 250, 243, 0.28);
+  background: rgba(20, 16, 12, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: rgba(255, 250, 243, 0.94);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.pano-tour-back:hover {
+  background: rgba(20, 16, 12, 0.7);
+  border-color: rgba(255, 250, 243, 0.5);
+}
+
+.pano-tour-back svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.pano-tour-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  color: rgba(255, 250, 243, 0.95);
+}
+
+.pano-tour-title-kicker {
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 250, 243, 0.62);
+}
+
+.pano-tour-title strong {
+  font-family: var(--font-editorial), serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.pano-tour-hotspot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4.4rem;
+  height: 4.4rem;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  z-index: 3;
+  opacity: 0;
+  will-change: transform;
+}
+
+.pano-tour-hotspot:disabled {
+  cursor: default;
+}
+
+.pano-tour-hotspot-floor {
+  display: block;
+  width: 4.4rem;
+  height: 4.4rem;
+  transform: perspective(220px) rotateX(62deg);
+  transform-style: preserve-3d;
+}
+
+.pano-tour-hotspot-circle {
+  position: absolute;
+  inset: 0.55rem;
+  display: block;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 0 18px rgba(255, 255, 255, 0.35),
+    inset 0 0 12px rgba(255, 255, 255, 0.3);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.pano-tour-hotspot-circle::before {
+  content: "";
+  position: absolute;
+  inset: -0.5rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  animation: pano-tour-pulse 2.4s ease-out infinite;
+}
+
+.pano-tour-hotspot-circle::after {
+  content: "";
+  position: absolute;
+  inset: 34%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+@keyframes pano-tour-pulse {
+  0% {
+    transform: scale(0.78);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+.pano-tour-hotspot:hover .pano-tour-hotspot-circle,
+.pano-tour-hotspot:focus-visible .pano-tour-hotspot-circle {
+  transform: scale(1.12);
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.pano-tour-hotspot-label {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 50%;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(20, 16, 12, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: rgba(255, 250, 243, 0.95);
+  font-family: var(--font-editorial), serif;
+  font-size: 0.88rem;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-50%) translateY(0.2rem);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: none;
+}
+
+.pano-tour-hotspot:hover .pano-tour-hotspot-label,
+.pano-tour-hotspot:focus-visible .pano-tour-hotspot-label {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.pano-tour-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 5.4rem;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0.45rem 1.1rem;
+  border-radius: 999px;
+  background: rgba(20, 16, 12, 0.5);
+  color: rgba(255, 250, 243, 0.85);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  z-index: 4;
+  animation: pano-tour-hint-fade 3.2s ease 1.2s forwards;
+  pointer-events: none;
+}
+
+@keyframes pano-tour-hint-fade {
+  to {
+    opacity: 0;
+  }
+}
+
+.pano-tour-spaces {
+  position: absolute;
+  left: 50%;
+  bottom: 1.15rem;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  max-width: min(94vw, 40rem);
+  padding: 0.4rem;
+  border-radius: 999px;
+  background: rgba(20, 16, 12, 0.42);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 250, 243, 0.16);
+  z-index: 4;
+}
+
+.pano-tour-space-chip {
+  border: 0;
+  padding: 0.44rem 0.95rem;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 250, 243, 0.78);
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+}
+
+.pano-tour-space-chip:hover {
+  color: rgba(255, 250, 243, 1);
+}
+
+.pano-tour-space-chip-active {
+  background: rgba(255, 250, 243, 0.92);
+  color: #241c13;
+  font-weight: 600;
+}
+
+.tower-a-unit-tour-button {
+  width: 100%;
+  margin-top: 0.85rem;
+}
+
+@media (max-width: 640px) {
+  .pano-tour-topbar {
+    padding: 0.85rem 0.9rem 2.2rem;
+  }
+
+  .pano-tour-title strong {
+    font-size: 1.05rem;
+  }
+
+  .pano-tour-back span {
+    display: none;
+  }
+
+  .pano-tour-back {
+    padding: 0.55rem;
+  }
+
+  .pano-tour-spaces {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    max-width: 94vw;
+    scrollbar-width: none;
+  }
+
+  .pano-tour-spaces::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pano-tour-space-chip {
+    font-size: 0.72rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .pano-tour-hint {
+    bottom: 4.6rem;
+    white-space: nowrap;
+  }
+}

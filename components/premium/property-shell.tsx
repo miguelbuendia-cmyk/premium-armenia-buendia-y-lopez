@@ -73,7 +73,10 @@ import type {
   ProjectContent,
   ResidenceCard,
 } from "@/lib/premium-content"
-import type { TowerAExplorerData } from "@/lib/tower-a-types"
+import type {
+  ExplorerReturnState,
+  TowerAExplorerData,
+} from "@/lib/tower-a-types"
 
 import {
   SequenceViewer,
@@ -98,6 +101,7 @@ type PropertyShellProps = {
     loadingPct: number
   }) => void
   suppressViewerLoadingOverlay?: boolean
+  returnToExplorer?: ExplorerReturnState | null
 }
 
 const dockSections: DockSection[] = [
@@ -226,6 +230,7 @@ export function PropertyShell({
   towerAExplorerData,
   onViewerLoadingStateChange,
   suppressViewerLoadingOverlay = false,
+  returnToExplorer = null,
 }: PropertyShellProps) {
   const [activeSection, setActiveSection] = useState<PanelSection | null>(null)
   const [currentFrame, setCurrentFrame] = useState(content.mainViewer.defaultFrame)
@@ -244,7 +249,11 @@ export function PropertyShell({
   const [selectedEducationId, setSelectedEducationId] = useState<string | null>(null)
   const [isTerrainSelected, setIsTerrainSelected] = useState(false)
   const [isDockCollapsed, setIsDockCollapsed] = useState(false)
-  const [isTowerAExplorerOpen, setIsTowerAExplorerOpen] = useState(false)
+  // Al volver desde un tour virtual el explorador arranca abierto en la
+  // unidad de origen, sin pasar por la transición de entrada a la torre.
+  const [isTowerAExplorerOpen, setIsTowerAExplorerOpen] = useState(
+    Boolean(returnToExplorer)
+  )
   const [isTowerATransitionPlaying, setIsTowerATransitionPlaying] =
     useState(false)
   const [activeLocationRouteState, setActiveLocationRouteState] =
@@ -599,6 +608,8 @@ export function PropertyShell({
           <TowerAFloorExplorer
             data={towerAExplorerData}
             onClose={() => setIsTowerAExplorerOpen(false)}
+            initialFloor={returnToExplorer?.floor ?? null}
+            initialUnitCode={returnToExplorer?.unitCode ?? null}
           />
         ) : null}
 

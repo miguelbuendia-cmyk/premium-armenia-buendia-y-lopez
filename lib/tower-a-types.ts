@@ -32,6 +32,11 @@ export type TowerAFloorPlan = {
   units: TowerAInventoryUnit[]
 }
 
+export type ExplorerReturnState = {
+  floor: number | null
+  unitCode: string | null
+}
+
 export type TowerAUnitMarker = {
   unitNumber: number
   x: number

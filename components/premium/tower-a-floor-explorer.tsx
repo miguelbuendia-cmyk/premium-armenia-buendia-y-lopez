@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 import { useMemo, useState } from "react"
 import {
   Bath,
@@ -10,6 +11,7 @@ import {
   Home,
   ImageIcon,
   Layers3,
+  Rotate3d,
   Ruler,
 } from "lucide-react"
 
@@ -22,6 +24,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { getTourByUnitNumber } from "@/lib/tours"
 import { cn } from "@/lib/utils"
 import type {
   TowerAExplorerData,
@@ -32,6 +35,8 @@ import type {
 type TowerAFloorExplorerProps = {
   data: TowerAExplorerData
   onClose: () => void
+  initialFloor?: number | null
+  initialUnitCode?: string | null
 }
 
 const statusLabels = {
@@ -49,13 +54,21 @@ const statusLegendItems = [
 export function TowerAFloorExplorer({
   data,
   onClose,
+  initialFloor: requestedFloor = null,
+  initialUnitCode = null,
 }: TowerAFloorExplorerProps) {
   const initialFloor =
+    (requestedFloor !== null &&
+    data.floors.some((floor) => floor.floor === requestedFloor)
+      ? requestedFloor
+      : null) ??
     data.floors.find((floor) => floor.image || floor.units.length)?.floor ??
     data.floors[0]?.floor ??
     3
   const [selectedFloor, setSelectedFloor] = useState(initialFloor)
-  const [selectedUnitCode, setSelectedUnitCode] = useState<string | null>(null)
+  const [selectedUnitCode, setSelectedUnitCode] = useState<string | null>(
+    initialUnitCode
+  )
 
   const activeFloor =
     data.floors.find((floor) => floor.floor === selectedFloor) ?? data.floors[0]
@@ -241,6 +254,9 @@ function UnitDetailOverlay({
   unit: TowerAInventoryUnit
   onClose: () => void
 }) {
+  // Los tours virtuales aplican a la planta tipo (pisos 2 en adelante), no al piso 1.
+  const tour = unit.floor > 1 ? getTourByUnitNumber(unit.unitNumber) : null
+
   return (
     <div
       className="tower-a-unit-modal"
@@ -315,6 +331,17 @@ function UnitDetailOverlay({
               <span>Listing ID</span>
               <strong>{unit.listingId || "N/D"}</strong>
             </div>
+
+            {tour && (
+              <Button asChild className="tower-a-unit-tour-button">
+                <Link
+                  href={`/tour/${tour.slug}?piso=${unit.floor}&unidad=${encodeURIComponent(unit.unitCode)}`}
+                >
+                  <Rotate3d />
+                  Tour virtual 360°
+                </Link>
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

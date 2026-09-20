@@ -15,7 +15,10 @@ import type {
   GallerySections,
   ProjectContent,
 } from "@/lib/premium-content"
-import type { TowerAExplorerData } from "@/lib/tower-a-types"
+import type {
+  ExplorerReturnState,
+  TowerAExplorerData,
+} from "@/lib/tower-a-types"
 
 import { PropertyShell } from "./property-shell"
 
@@ -24,6 +27,7 @@ type HomeIntroGateProps = {
   facadeSections: FacadeSections
   gallerySections: GallerySections
   towerAExplorerData: TowerAExplorerData
+  returnToExplorer?: ExplorerReturnState | null
 }
 
 type IntroState = "idle" | "starting" | "playing" | "completed" | "error"
@@ -36,12 +40,16 @@ export function HomeIntroGate({
   facadeSections,
   gallerySections,
   towerAExplorerData,
+  returnToExplorer = null,
 }: HomeIntroGateProps) {
   const backgroundVideoRef = useRef<HTMLVideoElement | null>(null)
   const introVideoRef = useRef<HTMLVideoElement | null>(null)
   const playbackStartTimeoutRef = useRef<number | null>(null)
   const isPlaybackAttemptActiveRef = useRef(false)
-  const [introState, setIntroState] = useState<IntroState>("idle")
+  // Al volver desde un tour virtual la intro ya se vio: se entra directo.
+  const [introState, setIntroState] = useState<IntroState>(
+    returnToExplorer ? "completed" : "idle"
+  )
   const [hasBackgroundVideoError, setHasBackgroundVideoError] = useState(false)
   const [hasViewerInitialFrame, setHasViewerInitialFrame] = useState(false)
   const [hasReadinessTimedOut, setHasReadinessTimedOut] = useState(false)
@@ -65,6 +73,15 @@ export function HomeIntroGate({
       window.clearTimeout(timeoutId)
     }
   }, [hasViewerInitialFrame])
+
+  // Limpia /?plantas=... de la barra de direcciones una vez consumido.
+  useEffect(() => {
+    if (!returnToExplorer) {
+      return
+    }
+    backgroundVideoRef.current?.pause()
+    window.history.replaceState(null, "", window.location.pathname)
+  }, [returnToExplorer])
 
   useEffect(() => {
     return () => {
@@ -149,6 +166,7 @@ export function HomeIntroGate({
           facadeSections={facadeSections}
           gallerySections={gallerySections}
           towerAExplorerData={towerAExplorerData}
+          returnToExplorer={returnToExplorer}
           suppressViewerLoadingOverlay
           onViewerLoadingStateChange={(state) => {
             setHasViewerInitialFrame(state.hasInitialFrame)
