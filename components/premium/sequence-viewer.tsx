@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import type { ViewerSequenceConfig } from "@/lib/premium-content"
+import type {
+  ViewerFrameTier,
+  ViewerSequenceConfig,
+} from "@/lib/premium-content"
 
 export type SequenceViewportGeometry = {
   x: number
@@ -23,6 +26,38 @@ type SequenceViewerProps = {
   }) => void
   onViewportGeometryChange?: (geometry: SequenceViewportGeometry | null) => void
   suppressLoadingOverlay?: boolean
+}
+
+// Tier más pequeño que cubre el viewport en píxeles de dispositivo sin
+// escalar hacia arriba. Con "cover" cuentan ancho y alto (en vertical manda el
+// alto); con "contain" en horizontal solo el ancho. Si ningún tier alcanza
+// (celulares en vertical, retina), se usa el mayor. Se resuelve una sola vez
+// al montar: recargar los 188 frames tras un resize sería peor que quedarse
+// con el tier inicial.
+function resolveFramesDir(
+  tiers: ViewerFrameTier[],
+  fit: ViewerSequenceConfig["fit"]
+) {
+  const sorted = [...tiers].sort((a, b) => a.width - b.width)
+  const fallback = sorted[sorted.length - 1]?.dir ?? ""
+
+  if (typeof window === "undefined") {
+    return fallback
+  }
+
+  const dpr = window.devicePixelRatio || 1
+  const neededWidth = window.innerWidth * dpr
+  const neededHeight = window.innerHeight * dpr
+  const heightMatters = !(
+    fit === "contain" && window.innerWidth >= window.innerHeight
+  )
+  return (
+    sorted.find(
+      (tier) =>
+        tier.width >= neededWidth &&
+        (!heightMatters || tier.height >= neededHeight)
+    )?.dir ?? fallback
+  )
 }
 
 export function SequenceViewer({
@@ -62,6 +97,10 @@ export function SequenceViewer({
   const [showHint, setShowHint] = useState(true)
   const [isIntroReady, setIsIntroReady] = useState(false)
   const [shouldSkipIntro, setShouldSkipIntro] = useState(false)
+  const [framesDir, setFramesDir] = useState(() =>
+    resolveFramesDir(config.frameTiers, config.fit)
+  )
+  const loadedDirRef = useRef(framesDir)
 
   const isViewerReady =
     hasInitialFrame ||
@@ -70,7 +109,6 @@ export function SequenceViewer({
 
   const configSignature = useMemo(() => {
     return [
-      config.framesDir,
       config.totalFrames,
       config.filePrefix,
       config.fileSuffix,
@@ -81,7 +119,6 @@ export function SequenceViewer({
     config.defaultFrame,
     config.filePrefix,
     config.fileSuffix,
-    config.framesDir,
     config.padLength,
     config.totalFrames,
   ])
@@ -129,9 +166,9 @@ export function SequenceViewer({
       const padded = String(index).padStart(config.padLength, "0")
       const normalizedPrefix = config.filePrefix.replace("Â°", "°")
       const fileName = `${normalizedPrefix}${padded}${config.fileSuffix}`
-      return `${config.framesDir}/${encodeURIComponent(fileName)}`
+      return `${framesDir}/${encodeURIComponent(fileName)}`
     },
-    [config.filePrefix, config.fileSuffix, config.framesDir, config.padLength]
+    [config.filePrefix, config.fileSuffix, config.padLength, framesDir]
   )
 
   const reportViewportGeometry = useCallback(
@@ -205,12 +242,17 @@ export function SequenceViewer({
       )
       const sourceHeight = image.naturalHeight
 
-      const coverScale =
-        Math.max(cssWidth / sourceWidth, cssHeight / sourceHeight) *
+      // "contain" muestra el frame entero en horizontal (bandas arriba y
+      // abajo); en vertical se mantiene "cover": un 2.36:1 entero sería una franja.
+      const useContain = config.fit === "contain" && cssWidth >= cssHeight
+      const drawScale =
+        (useContain
+          ? Math.min(cssWidth / sourceWidth, cssHeight / sourceHeight)
+          : Math.max(cssWidth / sourceWidth, cssHeight / sourceHeight)) *
         config.frameScale
 
-      const drawWidth = sourceWidth * coverScale
-      const drawHeight = sourceHeight * coverScale
+      const drawWidth = sourceWidth * drawScale
+      const drawHeight = sourceHeight * drawScale
 
       const x = (cssWidth - drawWidth) / 2
       const y = (cssHeight - drawHeight) / 2
@@ -234,6 +276,7 @@ export function SequenceViewer({
       })
     },
     [
+      config.fit,
       config.frameScale,
       config.sourceInsetLeft,
       config.sourceInsetRight,
@@ -455,6 +498,21 @@ export function SequenceViewer({
   useEffect(() => {
     let isCancelled = false
 
+    if (loadedDirRef.current !== framesDir) {
+      // Subida de tier tras un resize: se vacía la caché para volver a pedir
+      // los frames en la resolución nueva sin reiniciar el visor (el canvas
+      // conserva el último frame dibujado hasta que llega el nuevo).
+      loadedDirRef.current = framesDir
+      imagesRef.current = Array(config.totalFrames).fill(null)
+      loadedFramesRef.current = new Set()
+      failedFramesRef.current = new Set()
+      loadingFramesRef.current = new Map()
+      loadedCountRef.current = 0
+      failedCountRef.current = 0
+      introReadyCountRef.current = 0
+      setCompletedCount(0)
+    }
+
     const bumpCompletedCount = () => {
       const nextCount = loadedCountRef.current + failedCountRef.current
       setCompletedCount(nextCount)
@@ -607,6 +665,7 @@ export function SequenceViewer({
     config.preloadTickMs,
     config.totalFrames,
     drawNearestLoadedFrame,
+    framesDir,
     getFrameUrl,
     introFrameSet,
     introFrames,
@@ -625,6 +684,31 @@ export function SequenceViewer({
     setHasInitialFrame(true)
     commitFramePosition(virtualFrameRef.current)
   }, [commitFramePosition, completedCount, config.totalFrames, hasInitialFrame])
+
+  useEffect(() => {
+    // Solo se sube de tier (ventana maximizada, tablet girada); bajar no
+    // aporta nada y volvería a descargar los 190 frames.
+    const rank = (dir: string) =>
+      config.frameTiers.findIndex((tier) => tier.dir === dir)
+    let resizeTimer = 0
+
+    const onResize = () => {
+      window.clearTimeout(resizeTimer)
+      resizeTimer = window.setTimeout(() => {
+        const nextDir = resolveFramesDir(config.frameTiers, config.fit)
+        if (rank(nextDir) > rank(framesDir)) {
+          setFramesDir(nextDir)
+        }
+      }, 400)
+    }
+
+    window.addEventListener("resize", onResize)
+
+    return () => {
+      window.clearTimeout(resizeTimer)
+      window.removeEventListener("resize", onResize)
+    }
+  }, [config.fit, config.frameTiers, framesDir])
 
   useEffect(() => {
     const onResize = () => {

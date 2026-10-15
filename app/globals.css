@@ -962,6 +962,10 @@
   bottom: 1rem;
   width: min(17.75rem, calc(100vw - 3rem));
   z-index: 7;
+  /* En celular solo tiene max-height: el flex deja que el panel interno se
+     encoja y el scroll del acordeón tome el resto. */
+  display: flex;
+  flex-direction: column;
   animation: property-sidebar-in 220ms ease;
 }
 
@@ -969,6 +973,8 @@
   position: relative;
   display: flex;
   height: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 0.95rem;
   padding: 0.95rem 0.75rem 0.85rem;
@@ -1110,10 +1116,72 @@
   height: 1rem;
 }
 
+/* Un solo scroll para todo el acordeón: las tres secciones abren desplegadas.
+   El viewport crece por flex porque su height: 100% no resuelve cuando el
+   panel solo tiene max-height (celular). */
 .property-location-scroll {
+  display: flex;
   min-height: 0;
-  flex: 0 0 auto;
-  max-height: min(15.5rem, 34dvh);
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.property-location-scroll > [data-slot="scroll-area-viewport"] {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+/* Pista de que hay más abajo (data-more-below lo pone PropertyShell). */
+.property-location-scroll[data-more-below] > [data-slot="scroll-area-viewport"] {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 2.4rem), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 2.4rem), transparent);
+}
+
+.property-location-more {
+  position: absolute;
+  left: 50%;
+  bottom: 0.55rem;
+  display: inline-flex;
+  width: 1.6rem;
+  height: 1.6rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(17, 21, 18, 0.62);
+  color: rgba(255, 252, 243, 0.96);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity 200ms ease;
+}
+
+.property-location-more svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.property-location-scroll[data-more-below] + .property-location-more {
+  opacity: 1;
+  animation: property-location-more-nudge 1.6s ease-in-out infinite;
+}
+
+@keyframes property-location-more-nudge {
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  50% {
+    transform: translateX(-50%) translateY(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .property-location-scroll[data-more-below] + .property-location-more {
+    animation: none;
+  }
 }
 
 .property-location-list {
@@ -1448,7 +1516,7 @@
 
 .property-dock-panel {
   left: 50%;
-  bottom: 8rem;
+  bottom: 6.9rem;
   width: min(36rem, calc(100vw - 1.5rem));
   max-height: min(30rem, calc(100dvh - 12rem));
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -1550,7 +1618,7 @@
 
 .property-gallery-viewport {
   position: absolute;
-  inset: 1rem 1rem 7.5rem;
+  inset: 1rem 1rem 6.4rem;
   z-index: 6;
   display: flex;
   align-items: stretch;
@@ -1797,7 +1865,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
   transform: translateX(-50%);
 }
 
@@ -1806,9 +1874,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 0.8rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.7rem;
   background: rgba(101, 126, 74, 0.88);
 }
 
@@ -1829,10 +1897,10 @@
   display: flex;
   flex-wrap: nowrap;
   align-items: stretch;
-  gap: 0.5rem;
-  min-width: min(38rem, calc(100vw - 1.2rem));
-  padding: 0.48rem;
-  border-radius: 1.35rem;
+  gap: 0.4rem;
+  min-width: min(31rem, calc(100vw - 1.2rem));
+  padding: 0.34rem 0.4rem;
+  border-radius: 1.15rem;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(72, 91, 57, 0.82);
   backdrop-filter: blur(18px);
@@ -1861,12 +1929,12 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.24rem;
-  min-height: 3.8rem;
+  gap: 0.16rem;
+  min-height: 2.7rem;
   min-width: 0;
-  padding: 0.52rem 0.56rem;
+  padding: 0.34rem 0.5rem;
   border: 0;
-  border-radius: 0.95rem;
+  border-radius: 0.8rem;
   background: rgba(255, 255, 255, 0.08);
   color: rgba(255, 252, 244, 0.9);
   transition:
@@ -1876,13 +1944,13 @@
 }
 
 .property-dock-item svg {
-  width: 1rem;
-  height: 1rem;
+  width: 0.9rem;
+  height: 0.9rem;
 }
 
 .property-dock-item span {
   max-width: 100%;
-  font-size: 0.74rem;
+  font-size: 0.66rem;
   line-height: 1.05;
   white-space: nowrap;
 }
@@ -1974,7 +2042,7 @@
 .viewer-hint {
   position: absolute;
   left: 50%;
-  bottom: 6.2rem;
+  bottom: 5rem;
   z-index: 4;
   padding: 0.75rem 1rem;
   border-radius: 999px;
@@ -2847,10 +2915,6 @@
     gap: 0.3rem;
   }
 
-  .property-location-scroll {
-    max-height: min(9.6rem, 24dvh);
-  }
-
   .property-location-list {
     gap: 0.32rem;
   }
@@ -3261,10 +3325,6 @@
     padding: 0.2rem;
   }
 
-  .property-location-scroll {
-    max-height: min(6.8rem, 15svh);
-  }
-
   .property-location-item {
     min-height: 1.4rem;
     gap: 0.28rem;
@@ -3274,6 +3334,130 @@
 
   .property-location-item-note {
     font-size: 0.48rem;
+  }
+
+  /* Ubicación en celular: compacta para que quepan más filas con las tres
+     secciones abiertas. Encabezado en una sola línea (ícono + título) y menos
+     aire entre filas; la letra casi no baja porque ya está al límite legible. */
+  .property-location-sidebar-inner {
+    gap: 0.32rem;
+    padding: 0.5rem 0.4rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .property-location-close {
+    top: 0.42rem;
+    right: 0.42rem;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .property-location-close svg {
+    width: 0.95rem;
+    height: 0.95rem;
+  }
+
+  .property-location-header {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 0.3rem;
+    padding: 0.08rem 1.9rem 0 0.2rem;
+    text-align: left;
+  }
+
+  .property-location-title-icon {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+
+  .property-location-title-icon svg {
+    width: 0.95rem;
+    height: 0.95rem;
+  }
+
+  .property-location-title {
+    font-size: 0.78rem;
+  }
+
+  .property-location-accordion {
+    gap: 0.3rem;
+  }
+
+  .property-location-section {
+    gap: 0.2rem;
+  }
+
+  .property-location-section-toggle {
+    padding: 0.08rem 0;
+  }
+
+  .property-location-section-heading {
+    font-size: 0.56rem;
+  }
+
+  .property-location-section-heading svg {
+    width: 0.78rem;
+    height: 0.78rem;
+  }
+
+  .property-location-section-chevron {
+    width: 1rem;
+    height: 1rem;
+    padding: 0.14rem;
+  }
+
+  .property-location-list {
+    gap: 0.24rem;
+  }
+
+  .property-location-item {
+    min-height: 1.15rem;
+    align-items: center;
+    gap: 0.26rem;
+    padding: 0.13rem 0.28rem;
+    border-radius: 0.55rem;
+    font-size: 0.5rem;
+  }
+
+  .property-location-item-copy {
+    gap: 0.02rem;
+  }
+
+  .property-location-road-legend {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 0.18rem;
+  }
+
+  .property-location-education-legend {
+    width: 0.74rem;
+    height: 0.74rem;
+    border-radius: 0.22rem;
+  }
+
+  .property-location-education-legend svg {
+    width: 0.52rem;
+    height: 0.52rem;
+  }
+
+  .property-location-item-note {
+    font-size: 0.42rem;
+  }
+
+  /* En celular sobra: al entrar ya está seleccionado el lote y las
+     secciones abiertas muestran todo. */
+  .property-location-item-show-all {
+    display: none;
+  }
+
+  .property-location-more {
+    bottom: calc(0.35rem + env(safe-area-inset-bottom, 0px));
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .property-location-more svg {
+    width: 0.8rem;
+    height: 0.8rem;
   }
 
   .property-gallery-shell {
@@ -3734,10 +3918,6 @@
     width: 0.98rem;
     height: 0.98rem;
     padding: 0.14rem;
-  }
-
-  .property-location-scroll {
-    max-height: min(4.9rem, 14vh);
   }
 
   .property-amenity-detail-panel {

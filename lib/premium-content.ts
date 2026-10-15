@@ -65,14 +65,25 @@ export type ContactInfo = {
   schedule: string
 }
 
+export type ViewerFrameTier = {
+  // Tamaño del frame en ese tier; el visor elige el más pequeño que cubre el
+  // viewport × DPR (ver resolveFramesDir en sequence-viewer.tsx).
+  width: number
+  height: number
+  dir: string
+}
+
 export type ViewerSequenceConfig = {
   totalFrames: number
-  framesDir: string
+  frameTiers: ViewerFrameTier[]
   filePrefix: string
   fileSuffix: string
   padLength: number
   defaultFrame: number
   frameScale: number
+  // "cover" llena la pantalla recortando; "contain" muestra el frame entero en
+  // horizontal (bandas arriba y abajo) y cover en vertical.
+  fit?: "cover" | "contain"
   sourceInsetLeft: number
   sourceInsetRight: number
   dragSensitivity: number
@@ -207,7 +218,12 @@ export type ProjectContent = {
 
 const LEGACY_MAIN_TOTAL_FRAMES = 75
 const PREVIOUS_MAIN_TOTAL_FRAMES = 110
-const NEXT_MAIN_TOTAL_FRAMES = 190
+const NEXT_MAIN_TOTAL_FRAMES = 188
+// Marco de autoría de las x de los marcadores: se escribieron sobre el render
+// anterior, que el visor recortaba un 12.3% por lado, y normalizeMainOverlayX
+// las lleva a ese encuadre. El render actual (Torres360v2, 16:9) se dibuja
+// entero (inset 0); la cámara cambió respecto al original, así que los
+// marcadores quedan pendientes de revisión sobre el render nuevo.
 const MAIN_SOURCE_INSET_LEFT = 0.123
 const MAIN_SOURCE_INSET_RIGHT = 0.123
 
@@ -242,13 +258,16 @@ function scaleVisibleFrameRange(range: { start: number; end: number }) {
   }
 }
 
-function frameFromSequenceName(fileName: string) {
-  const match = fileName.match(/(\d{4})/)
-  if (!match) {
-    throw new Error(`No se pudo leer el frame desde "${fileName}"`)
-  }
+// Los frames del hero se numeran en Unreal desde torres360.0095.png; el visor
+// usa índices 0..187. Para editar a mano se escribe el número del archivo.
+// 0168 y 0170 llegaron dañados en el render v5 y se quitaron de la secuencia;
+// heroFrame salta esos números para que el índice siga cuadrando.
+const HERO_FIRST_FILE_FRAME = 95
+const HERO_SKIPPED_FILE_FRAMES = [168, 170]
 
-  return Number(match[1])
+function heroFrame(fileNumber: number) {
+  const skippedBefore = HERO_SKIPPED_FILE_FRAMES.filter((skipped) => skipped < fileNumber).length
+  return fileNumber - HERO_FIRST_FILE_FRAME - skippedBefore
 }
 
 function scaleHotspotPositions(positions: HotspotPosition[]): HotspotPosition[] {
@@ -342,7 +361,7 @@ export const premiumContent: ProjectContent = {
   },
   stats: [
     { label: "Estado", value: "Lanzamiento editorial" },
-    { label: "Recorrido", value: "190 frames con drag" },
+    { label: "Recorrido", value: "188 frames con drag" },
     { label: "Vista", value: "Hero a pantalla completa" },
   ],
   locationPoints: [
@@ -530,6 +549,12 @@ export const premiumContent: ProjectContent = {
       }),
     },
   ],
+  // Marcadores de amenities sobre el hero (editar a mano aquí):
+  //   targetFrame  → frame al que gira el visor al pulsar la amenidad (número del
+  //                  archivo de Unreal, torres360.NNNN.png)
+  //   marker.frame → frame en el que se muestra el icono (normalmente el mismo)
+  //   marker.x / y → posición del icono como fracción del frame: x de 0 (izquierda)
+  //                  a 1 (derecha), y de 0 (arriba) a 1 (abajo)
   amenities: [
     {
       id: "piscina",
@@ -539,11 +564,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Presenta una amenidad de uso mixto que ayuda a vender bienestar, reunion familiar y tiempo libre dentro del proyecto.",
       statusNote: "Render listo para presentar la zona humeda dentro del recorrido principal.",
-      targetFrame: frameFromSequenceName("360\u00B0.0107"),
+      targetFrame: heroFrame(202),
       marker: {
-        frame: frameFromSequenceName("360\u00B0.0107"),
-        x: normalizeMainOverlayX(0.7),
-        y: 0.779,
+        frame: heroFrame(202),
+        x: 0.73,
+        y: 0.79,
       },
       media: {
         src: "/Exteriores/piscina.webp",
@@ -562,10 +587,10 @@ export const premiumContent: ProjectContent = {
       description:
         "Los jardines amplifican la sensacion de calma y conectan visualmente el proyecto con el entorno natural.",
       statusNote: "Pendiente integrar renders con vegetacion definitiva.",
-      targetFrame: frameFromSequenceName("360\u00B0.0135"),
+      targetFrame: heroFrame(230),
       marker: {
-        frame: frameFromSequenceName("360\u00B0.0135"),
-        x: normalizeMainOverlayX(0.6),
+        frame: heroFrame(230),
+        x: 0.633,
         y: 0.74,
       },
       media: {
@@ -585,10 +610,10 @@ export const premiumContent: ProjectContent = {
       description:
         "Un punto social pensado para reuniones, comidas compartidas y permanencia junto al entorno verde del proyecto.",
       statusNote: "Amenidad ubicada cerca de Jardines dentro del recorrido.",
-      targetFrame: frameFromSequenceName("360\u00B0.0135"),
+      targetFrame: heroFrame(230),
       marker: {
-        frame: frameFromSequenceName("360\u00B0.0135"),
-        x: normalizeMainOverlayX(0.56),
+        frame: heroFrame(230),
+        x: 0.580,
         y: 0.785,
       },
       media: {
@@ -608,11 +633,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Refuerza la vida cotidiana del conjunto con un punto pensado para mascotas, recorridos tranquilos y contacto con el paisajismo.",
       statusNote: "Amenidad ubicada cerca de Jardines dentro del recorrido.",
-      targetFrame: frameFromSequenceName("360\u00B0.0135"),
+      targetFrame: heroFrame(230),
       marker: {
-        frame: frameFromSequenceName("360\u00B0.0135"),
-        x: normalizeMainOverlayX(0.557),
-        y: 0.845,
+        frame: heroFrame(230),
+        x: 0.58,
+        y: 0.82,
       },
       media: {
         src: "/8-PARQUE-DE-PERROS.webp",
@@ -630,11 +655,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Un espacio disenado para el bienestar, la energia y la constancia.",
       statusNote: "",
-      targetFrame: frameFromSequenceName("360\u00B0.0105"),
+      targetFrame: heroFrame(200),
       marker: {
-        frame: frameFromSequenceName("360\u00B0.0105"),
-        x: normalizeMainOverlayX(0.7),
-        y: 0.725,
+        frame: heroFrame(200),
+        x: 0.73,
+        y: 0.739,
       },
       media: {
         src: "/GYM.webp",
@@ -652,11 +677,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Zona de juegos con ping pong, futbolito y billar para compartir y disfrutar.",
       statusNote: "",
-      targetFrame: frameFromSequenceName("360\u00B0.0096"),
+      targetFrame: heroFrame(191),
       marker: {
-        frame: frameFromSequenceName("360\u00B0.0096"),
-        x: normalizeMainOverlayX(0.637),
-        y: 0.76,
+        frame: heroFrame(191),
+        x: 0.639,
+        y: 0.78,
       },
       media: {
         src: "/ZONA%20DE%20JUEGOS.webp",
@@ -675,11 +700,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Trabaja sin desplazarte en un ambiente comodo y profesional.",
       statusNote: "",
-      targetFrame: frameFromSequenceName("360\u00B0.0107"),
+      targetFrame: heroFrame(202),
       marker: {
-        frame: frameFromSequenceName("360\u00B0.0107"),
-        x: normalizeMainOverlayX(0.639),
-        y: 0.735,
+        frame: heroFrame(202),
+        x: 0.667,
+        y: 0.77,
       },
       media: {
         src: "/COWORKING.webp",
@@ -696,19 +721,19 @@ export const premiumContent: ProjectContent = {
       highlight: "Espacio exterior pensado para juego seguro y vida familiar.",
       description:
         "Ayuda a comunicar un proyecto pensado para familias, uso cotidiano y estancia prolongada.",
-      statusNote: "Pendiente sumar escena de uso y paisajismo final.",
-      targetFrame: frameFromSequenceName("360\u00B0.0064"),
+      statusNote: "Render listo con juegos, paisajismo y escena de uso junto a la piscina.",
+      targetFrame: heroFrame(159),
       marker: {
-        frame: frameFromSequenceName("360\u00B0.0064"),
-        x: normalizeMainOverlayX(0.46),
+        frame: heroFrame(159),
+        x: 0.4,
         y: 0.75,
       },
       media: {
-        src: "/Turco.webp",
+        src: "/parque-de-ninos.webp",
         alt: "Render del parque de niños",
-        placeholderLabel: "Render pendiente",
+        placeholderLabel: "Render del parque",
         placeholderNote:
-          "Ideal para una escena familiar con mobiliario, juego seguro y paisajismo definitivo.",
+          "Visual listo para presentar el parque infantil con mobiliario, juego seguro y paisajismo.",
       },
     },
     {
@@ -720,11 +745,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Complementa la experiencia familiar con un espacio pausado para lectura, conversacion y permanencia cotidiana.",
       statusNote: "Amenidad ubicada en el frame del Parque de ninos.",
-      targetFrame: frameFromSequenceName("360\u00B0.0064"),
+      targetFrame: heroFrame(159),
       marker: {
-        frame: frameFromSequenceName("360\u00B0.0064"),
-        x: normalizeMainOverlayX(0.478),
-        y: 0.645,
+        frame: heroFrame(159),
+        x: 0.43,
+        y: 0.678,
       },
       media: {
         src: "/zona-de-lectura.webp",
@@ -743,11 +768,11 @@ export const premiumContent: ProjectContent = {
       description:
         "Se integra como argumento premium para reforzar la experiencia de descanso y el valor percibido del conjunto.",
       statusNote: "Rotacion focal sin tarjeta de render en esta etapa.",
-      targetFrame: frameFromSequenceName("360\u00B0.0108"),
+      targetFrame: heroFrame(203),
       marker: {
-        frame: frameFromSequenceName("360\u00B0.0108"),
-        x: normalizeMainOverlayX(0.655),
-        y: 0.694,
+        frame: heroFrame(203),
+        x: 0.7,
+        y: 0.72,
       },
       media: {
         src: "/Parque%20ni%C3%B1os.webp",
@@ -844,15 +869,22 @@ export const premiumContent: ProjectContent = {
     schedule: "Lunes a Viernes 8 a.m-6 p.m Sabado 8 a.m-12 p.m",
   },
   mainViewer: {
-    totalFrames: 190,
-    framesDir: "/2579WPG",
-    filePrefix: "360\u00B0.",
-    fileSuffix: "_resultado.webp",
+    totalFrames: 188,
+    frameTiers: [
+      { width: 1280, height: 720, dir: "/hero/1280" },
+      { width: 1920, height: 1080, dir: "/hero/1920" },
+    ],
+    filePrefix: "frame-",
+    fileSuffix: ".webp",
     padLength: 4,
     defaultFrame: 0,
     frameScale: 1,
-    sourceInsetLeft: MAIN_SOURCE_INSET_LEFT,
-    sourceInsetRight: MAIN_SOURCE_INSET_RIGHT,
+    // Render 16:9 (Torres360 v5, 2560x1440): "cover" llena la pantalla y en
+    // pantallas 16:9 muestra el frame entero, sin bandas ni recorte.
+    fit: "cover",
+    // Sin recorte (ver MAIN_SOURCE_INSET_*).
+    sourceInsetLeft: 0,
+    sourceInsetRight: 0,
     dragSensitivity: 0.45,
     autoplayTurns: 0,
     autoplayMinReadyFrames: 20,

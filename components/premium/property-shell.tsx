@@ -145,6 +145,7 @@ const amenityMediaDimensions = {
   "/COWORKING.webp": { width: 3500, height: 2190 },
   "/Turco.webp": { width: 2230, height: 990 },
   "/Parque%20ni%C3%B1os.webp": { width: 2680, height: 2065 },
+  "/parque-de-ninos.webp": { width: 1883, height: 835 },
 } as const
 
 const gallerySectionMeta = {
@@ -210,6 +211,8 @@ const facadeFolderOrder: FacadeSectionKey[] = ["dia", "noche"]
 
 type LocationAccordionSection = "roads" | "pois" | "education"
 
+const ALL_LOCATION_SECTIONS: LocationAccordionSection[] = ["roads", "pois", "education"]
+
 type ExpandedGalleryState = {
   index: number
   items: GalleryCard[]
@@ -258,8 +261,50 @@ export function PropertyShell({
     useState(false)
   const [activeLocationRouteState, setActiveLocationRouteState] =
     useState<LocationRouteState>(EMPTY_LOCATION_ROUTE_STATE)
-  const [openLocationSection, setOpenLocationSection] =
-    useState<LocationAccordionSection | null>("roads")
+  // Ubicación abre con todas las secciones desplegadas: a muchos usuarios no
+  // se les ocurre abrirlas y se pierden malls, colegios, etc.
+  const [openLocationSections, setOpenLocationSections] = useState<
+    LocationAccordionSection[]
+  >(ALL_LOCATION_SECTIONS)
+  const locationScrollRef = useRef<HTMLDivElement>(null)
+
+  // Marca el scroll de Ubicación con data-more-below mientras quede contenido
+  // abajo: el CSS desvanece el borde y muestra una flecha para que en celular
+  // se entienda que se puede bajar.
+  useEffect(() => {
+    if (activeSection !== "location") {
+      return
+    }
+
+    const root = locationScrollRef.current
+    const viewport = root?.querySelector<HTMLElement>(
+      '[data-slot="scroll-area-viewport"]'
+    )
+
+    if (!root || !viewport) {
+      return
+    }
+
+    const update = () => {
+      const remaining =
+        viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight
+      root.toggleAttribute("data-more-below", remaining > 4)
+    }
+
+    update()
+    viewport.addEventListener("scroll", update, { passive: true })
+    const observer = new ResizeObserver(update)
+    observer.observe(viewport)
+
+    if (viewport.firstElementChild) {
+      observer.observe(viewport.firstElementChild)
+    }
+
+    return () => {
+      viewport.removeEventListener("scroll", update)
+      observer.disconnect()
+    }
+  }, [activeSection])
 
   const highlightedSection =
     activeSection && activeSection !== "contact" ? activeSection : "overview"
@@ -432,7 +477,7 @@ export function PropertyShell({
       }
 
       if (section === "location") {
-        setOpenLocationSection("roads")
+        setOpenLocationSections(ALL_LOCATION_SECTIONS)
         setSelectedRoadId(null)
         setSelectedPoiId(null)
         setSelectedEducationId(null)
@@ -443,8 +488,10 @@ export function PropertyShell({
   }
 
   const toggleLocationSection = (section: LocationAccordionSection) => {
-    setOpenLocationSection((currentSection) =>
-      currentSection === section ? null : section
+    setOpenLocationSections((currentSections) =>
+      currentSections.includes(section)
+        ? currentSections.filter((current) => current !== section)
+        : [...currentSections, section]
     )
   }
 
@@ -519,7 +566,7 @@ export function PropertyShell({
         >
           <div className="property-viewer-scrim" aria-hidden="true" />
           <SequenceViewer
-            key={`${content.mainViewer.framesDir}:${content.mainViewer.totalFrames}`}
+            key={`${content.mainViewer.frameTiers.map((tier) => tier.dir).join(',')}:${content.mainViewer.totalFrames}`}
             config={content.mainViewer}
             focusFrame={focusFrame}
             onFrameChange={setCurrentFrame}
@@ -826,19 +873,19 @@ export function PropertyShell({
                 </h2>
               </div>
 
-              <div className="property-location-accordion">
-                <LocationAccordionSectionCard
-                  title="Vias de acceso"
-                  icon={Route}
-                  isOpen={openLocationSection === "roads"}
-                  onToggle={() => toggleLocationSection("roads")}
-                >
-                  <ScrollArea className="property-location-scroll">
+              <ScrollArea ref={locationScrollRef} className="property-location-scroll">
+                <div className="property-location-accordion">
+                  <LocationAccordionSectionCard
+                    title="Vias de acceso"
+                    icon={Route}
+                    isOpen={openLocationSections.includes("roads")}
+                    onToggle={() => toggleLocationSection("roads")}
+                  >
                     <div className="property-location-list">
                       <button
                         type="button"
                         className={cn(
-                          "property-location-item",
+                          "property-location-item property-location-item-show-all",
                           !selectedRoadId &&
                             !selectedPoiId &&
                             !selectedEducationId &&
@@ -893,16 +940,14 @@ export function PropertyShell({
                         />
                       ))}
                     </div>
-                  </ScrollArea>
-                </LocationAccordionSectionCard>
+                  </LocationAccordionSectionCard>
 
-                <LocationAccordionSectionCard
-                  title="Malls y Restaurantes"
-                  icon={Landmark}
-                  isOpen={openLocationSection === "pois"}
-                  onToggle={() => toggleLocationSection("pois")}
-                >
-                  <ScrollArea className="property-location-scroll">
+                  <LocationAccordionSectionCard
+                    title="Malls y Restaurantes"
+                    icon={Landmark}
+                    isOpen={openLocationSections.includes("pois")}
+                    onToggle={() => toggleLocationSection("pois")}
+                  >
                     <div className="property-location-list">
                       {content.locationMap.pois.map((poi) => (
                         <PoiItem
@@ -921,16 +966,14 @@ export function PropertyShell({
                         />
                       ))}
                     </div>
-                  </ScrollArea>
-                </LocationAccordionSectionCard>
+                  </LocationAccordionSectionCard>
 
-                <LocationAccordionSectionCard
-                  title="Colegios y universidades"
-                  icon={GraduationCap}
-                  isOpen={openLocationSection === "education"}
-                  onToggle={() => toggleLocationSection("education")}
-                >
-                  <ScrollArea className="property-location-scroll">
+                  <LocationAccordionSectionCard
+                    title="Colegios y universidades"
+                    icon={GraduationCap}
+                    isOpen={openLocationSections.includes("education")}
+                    onToggle={() => toggleLocationSection("education")}
+                  >
                     <div className="property-location-list">
                       {content.locationMap.educationPoints.map((educationPoint) => (
                         <EducationPointItem
@@ -951,9 +994,12 @@ export function PropertyShell({
                         />
                       ))}
                     </div>
-                  </ScrollArea>
-                </LocationAccordionSectionCard>
-              </div>
+                  </LocationAccordionSectionCard>
+                </div>
+              </ScrollArea>
+              <span className="property-location-more" aria-hidden="true">
+                <ChevronDown />
+              </span>
 
             </div>
           </aside>
