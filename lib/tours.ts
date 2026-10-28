@@ -206,7 +206,7 @@ export const apartmentTours: ApartmentTour[] = [
         ...spaceImages("tipo-7", "cuarto-principal"),
         initialYaw: -30,
         hotspots: [
-          { target: "bano-principal", yaw: 28, pitch: -38 },
+          { target: "bano-principal", yaw: 14, pitch: -47 },
           { target: "sala", yaw: 100, pitch: -32 },
         ],
       },
