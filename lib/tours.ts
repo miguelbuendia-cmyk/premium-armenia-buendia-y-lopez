@@ -165,7 +165,8 @@ export const apartmentTours: ApartmentTour[] = [
         ...spaceImages("tipo-7", "entrada"),
         initialYaw: -10,
         hotspots: [
-          { target: "sala", yaw: -10, pitch: -22 },
+          { target: "sala", yaw: -22, pitch: -22 },
+          { target: "estudio", yaw: 25, pitch: -18 },
           { target: "bano-social", yaw: 36, pitch: -13 },
         ],
       },
@@ -173,9 +174,20 @@ export const apartmentTours: ApartmentTour[] = [
         id: "sala",
         name: "Sala – Comedor",
         ...spaceImages("tipo-7", "sala"),
-        initialYaw: -30,
+        initialYaw: -15,
         hotspots: [
-          { target: "entrada", yaw: 24, pitch: -24 },
+          { target: "estudio", yaw: 49, pitch: -24 },
+          { target: "entrada", yaw: 121, pitch: -27 },
+        ],
+      },
+      {
+        id: "estudio",
+        name: "Estudio",
+        ...spaceImages("tipo-7", "estudio"),
+        initialYaw: 0,
+        hotspots: [
+          { target: "sala", yaw: 25, pitch: -26 },
+          { target: "entrada", yaw: -68, pitch: -21 },
           { target: "bano-social", yaw: 100, pitch: -56 },
           { target: "alcoba-2", yaw: -148, pitch: -30 },
         ],
@@ -186,7 +198,7 @@ export const apartmentTours: ApartmentTour[] = [
         ...spaceImages("tipo-7", "bano-social"),
         initialYaw: 0,
         hotspots: [
-          { target: "sala", yaw: -112, pitch: -38 },
+          { target: "estudio", yaw: -112, pitch: -38 },
           { target: "entrada", yaw: 152, pitch: -44 },
         ],
       },
@@ -196,7 +208,7 @@ export const apartmentTours: ApartmentTour[] = [
         ...spaceImages("tipo-7", "alcoba-2"),
         initialYaw: -10,
         hotspots: [
-          { target: "sala", yaw: -135, pitch: -24 },
+          { target: "estudio", yaw: -135, pitch: -24 },
           { target: "bano-social", yaw: -88, pitch: -40 },
         ],
       },
@@ -207,7 +219,7 @@ export const apartmentTours: ApartmentTour[] = [
         initialYaw: -30,
         hotspots: [
           { target: "bano-principal", yaw: 14, pitch: -47 },
-          { target: "sala", yaw: 100, pitch: -32 },
+          { target: "estudio", yaw: 100, pitch: -32 },
         ],
       },
       {
