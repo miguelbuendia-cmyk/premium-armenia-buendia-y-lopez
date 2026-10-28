@@ -153,6 +153,72 @@ export const apartmentTours: ApartmentTour[] = [
       },
     ],
   },
+  {
+    slug: "tipo-7",
+    unitNumber: 7,
+    title: "Apartamento Tipo 7",
+    start: "entrada",
+    spaces: [
+      {
+        id: "entrada",
+        name: "Entrada",
+        ...spaceImages("tipo-7", "entrada"),
+        initialYaw: -10,
+        hotspots: [
+          { target: "sala", yaw: -10, pitch: -22 },
+          { target: "bano-social", yaw: 36, pitch: -13 },
+        ],
+      },
+      {
+        id: "sala",
+        name: "Sala – Comedor",
+        ...spaceImages("tipo-7", "sala"),
+        initialYaw: -30,
+        hotspots: [
+          { target: "entrada", yaw: 24, pitch: -24 },
+          { target: "bano-social", yaw: 100, pitch: -56 },
+          { target: "alcoba-2", yaw: -148, pitch: -30 },
+        ],
+      },
+      {
+        id: "bano-social",
+        name: "Baño social",
+        ...spaceImages("tipo-7", "bano-social"),
+        initialYaw: 0,
+        hotspots: [
+          { target: "sala", yaw: -112, pitch: -38 },
+          { target: "entrada", yaw: 152, pitch: -44 },
+        ],
+      },
+      {
+        id: "alcoba-2",
+        name: "Alcoba 2",
+        ...spaceImages("tipo-7", "alcoba-2"),
+        initialYaw: -10,
+        hotspots: [
+          { target: "sala", yaw: -135, pitch: -24 },
+          { target: "bano-social", yaw: -88, pitch: -40 },
+        ],
+      },
+      {
+        id: "cuarto-principal",
+        name: "Cuarto principal",
+        ...spaceImages("tipo-7", "cuarto-principal"),
+        initialYaw: -30,
+        hotspots: [
+          { target: "bano-principal", yaw: 28, pitch: -38 },
+          { target: "sala", yaw: 100, pitch: -32 },
+        ],
+      },
+      {
+        id: "bano-principal",
+        name: "Baño principal",
+        ...spaceImages("tipo-7", "bano-principal"),
+        initialYaw: 0,
+        hotspots: [{ target: "cuarto-principal", yaw: -112, pitch: -44 }],
+      },
+    ],
+  },
 ]
 
 export function getTourBySlug(slug: string) {
