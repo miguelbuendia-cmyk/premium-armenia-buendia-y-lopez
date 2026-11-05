@@ -1269,6 +1269,11 @@ function TowerATransitionOverlay({
         onEnded={finishTransition}
         onError={finishTransition}
       >
+        {/* AV1 pesa ~40 % del H.264; los navegadores sin AV1 saltan al MP4. */}
+        <source
+          src="/Torre%20A/Transicion/360_2-av1.mp4"
+          type='video/mp4; codecs="av01.0.12M.08"'
+        />
         <source src="/Torre%20A/Transicion/360_2.mp4" type="video/mp4" />
       </video>
       <div className="tower-a-transition-scrim" aria-hidden="true" />

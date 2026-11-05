@@ -200,6 +200,10 @@ export function HomeIntroGate({
           }}
           aria-hidden="true"
         >
+          <source
+            src="/Intro%20detras/Introepic-av1.mp4"
+            type='video/mp4; codecs="av01.0.05M.08"'
+          />
           <source src="/Intro%20detras/Introepic.mp4" type="video/mp4" />
         </video>
 
@@ -215,6 +219,8 @@ export function HomeIntroGate({
           onEnded={completeIntro}
           onError={failOpen}
         >
+          {/* AV1 primero (más liviano); sin soporte se usa el H.264. */}
+          <source src="/intro-av1.mp4" type='video/mp4; codecs="av01.0.08M.08"' />
           <source src="/intro.mp4" type="video/mp4" />
         </video>
 
